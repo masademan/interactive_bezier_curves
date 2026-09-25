@@ -15,7 +15,7 @@ def nCr(n: int | float, r: int | float) -> int | float:
     """
     Calculates the combinatorical operation of nCr
     It's the equivalent of n! / (r! * (n - r)!), where n! is the factorial function
-    However, this function doesn't use any recursion of other factorial function
+    However, this function doesn't use any recursion or other factorial functions
     """
 
     if n == 0 or r == 0:
