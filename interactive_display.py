@@ -129,10 +129,13 @@ class BezierGUI:
         self.root.bind("<Control-w>", self.quit)
         self.root.bind("<Escape>", self.quit)
 
-        self.root.bind("<Up>", lambda event: self.move_point_in_dir("<Up>"))
-        self.root.bind("<Down>", lambda event: self.move_point_in_dir("<Down>"))
-        self.root.bind("<Left>", lambda event: self.move_point_in_dir("<Left>"))
-        self.root.bind("<Right>", lambda event: self.move_point_in_dir("<Right>"))
+        self.root.bind("<Up>", lambda _event: self.move_point_in_dir("<Up>"))
+        self.root.bind("<Down>", lambda _event: self.move_point_in_dir("<Down>"))
+        self.root.bind("<Left>", lambda _event: self.move_point_in_dir("<Left>"))
+        self.root.bind("<Right>", lambda _event: self.move_point_in_dir("<Right>"))
+        
+        # Help window
+        self.help_window = None
 
         # Main frame
         self.main_frame = tk.Frame(self.root)
@@ -318,7 +321,7 @@ class BezierGUI:
         ).pack(padx=5, pady=5)
 
         #   Help selection TODO
-        help_sections = ["Controls", "Function"]
+        help_sections = ["Grid settings", "Control point settings", "Bezier curve settings", "Controls", "Function"]
         self.help_selection = tk.StringVar()
         self.help_selection.set(help_sections[0])
         self.help_dropdown = tk.OptionMenu(self.help_frame, self.help_selection, *help_sections)
@@ -660,6 +663,7 @@ class BezierGUI:
                 )
 
     def open_help_guide(self) -> None:  # TODO
+        # # Msg box test
         # messagebox.showinfo("Test msg", 
         # """
         #     Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras tincidunt risus in hendrerit gravida. Suspendisse vitae mi id nulla facilisis pretium at vel enim. Curabitur mattis urna sed elementum molestie. Interdum et malesuada fames ac ante ipsum primis in faucibus. Vestibulum id libero a orci cursus accumsan et in neque. Nulla in mauris quam. Fusce fermentum pharetra lectus, id tincidunt risus dictum eget. Proin tempus tincidunt scelerisque. Sed gravida tortor efficitur tortor tincidunt, eu faucibus nulla facilisis. Suspendisse eu nulla et leo efficitur porttitor ac varius quam. Mauris a sagittis quam. Quisque vitae quam vestibulum, facilisis justo et, blandit enim. Aliquam erat volutpat. Nulla semper, arcu ut imperdiet consectetur, urna dui tempor urna, eget mattis leo nisl eu turpis. Quisque in odio eu urna mattis elementum mattis ac magna.
@@ -674,6 +678,7 @@ class BezierGUI:
         # """
         # )
         
+        # # New window + label test
         # new_window = tk.Toplevel(self.root)
         # new_window.title("Test msg")
         # # new_window.geometry("300x200")
@@ -709,6 +714,53 @@ class BezierGUI:
         #     Duis porta lectus quis commodo congue.
         # """
         # ).pack(padx=5, pady=5)
+        
+        # New window + scolling text test
+        self.help_window = tk.Toplevel(self.root)
+        self.help_window.title("Test msg")
+        self.help_window.protocol("WM_DELETE_WINDOW", self.quit)
+        # new_window.geometry("300x200")
+        
+        scrollbar = tk.Scrollbar(self.help_window)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        
+        text_area = tk.Text(self.help_window, font=("Arial", 11), wrap=tk.WORD, yscrollcommand=scrollbar.set)
+        text_area.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scrollbar.config(command=text_area.yview)
+        
+        text_area.insert(tk.END,
+        """
+            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras tincidunt risus in hendrerit gravida. Suspendisse vitae mi id nulla facilisis pretium at vel enim. Curabitur mattis urna sed elementum molestie.
+            Interdum et malesuada fames ac ante ipsum primis in faucibus. Vestibulum id libero a orci cursus accumsan et in neque. Nulla in mauris quam. Fusce fermentum pharetra lectus, id tincidunt risus dictum eget.
+            Proin tempus tincidunt scelerisque. Sed gravida tortor efficitur tortor tincidunt, eu faucibus nulla facilisis. Suspendisse eu nulla et leo efficitur porttitor ac varius quam. Mauris a sagittis quam.
+            Quisque vitae quam vestibulum, facilisis justo et, blandit enim. Aliquam erat volutpat. Nulla semper, arcu ut imperdiet consectetur, urna dui tempor urna, eget mattis leo nisl eu turpis.
+            Quisque in odio eu urna mattis elementum mattis ac magna.
+
+            Curabitur efficitur nisl non laoreet luctus. Maecenas suscipit eros neque, non sagittis leo blandit vel. Etiam nec dolor ac lacus auctor consequat id nec felis.
+            Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Aenean vel nibh quis urna faucibus scelerisque. Proin quam eros, pulvinar a tristique eget, posuere et urna.
+            Nulla a nisi et ligula ultricies auctor et nec augue. Donec in urna non enim interdum iaculis. Donec fringilla maximus pellentesque. Maecenas semper aliquam orci eu varius.
+            Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Phasellus facilisis venenatis eleifend. Pellentesque purus nisi, bibendum ac libero ac, consequat imperdiet quam.
+            Pellentesque leo tellus, sodales at erat in, elementum ultrices velit. Integer non feugiat ex, egestas interdum ex. Nunc quam tellus, commodo sed tellus quis, aliquam faucibus sem.
+
+            Nunc feugiat, velit non mollis imperdiet, tortor nunc malesuada lectus, eget porttitor lorem massa id turpis. Cras convallis libero nec urna venenatis, non malesuada ligula porttitor.
+            Curabitur a tellus ac ex tempus porttitor sed in ipsum. Praesent tempus risus non tellus suscipit venenatis eu mattis nulla. Praesent sem est, pretium quis tempus ac, molestie id purus.
+            Nunc rutrum tortor arcu, sit amet tincidunt nisl tincidunt vel. Cras malesuada malesuada pretium. Curabitur ut lacus metus. Integer erat felis, luctus a pulvinar et, egestas quis neque.
+            Duis venenatis, felis nec volutpat tincidunt, augue purus dignissim turpis, at bibendum risus mi eget elit. Nam vel tellus sit amet arcu tempor interdum non faucibus ante. Sed in magna at ex vulputate maximus ut a nisi.
+            Suspendisse aliquam enim vitae massa bibendum sollicitudin. Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+
+            Morbi iaculis ex scelerisque lacus dapibus posuere. Sed malesuada rutrum placerat. Vivamus lobortis ut sem a fermentum. Nulla tempus hendrerit ex in accumsan. Integer augue sapien, eleifend non nibh a, convallis iaculis est.
+            Integer orci nisi, volutpat eleifend arcu egestas, volutpat condimentum sem. Morbi a orci facilisis, euismod purus ullamcorper, feugiat est. Maecenas accumsan magna sit amet odio efficitur finibus.
+            Sed vel tellus pretium, venenatis ligula eu, scelerisque libero. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Ut nec aliquam velit, id commodo purus.
+            Cras pretium lorem et laoreet convallis.
+
+            Morbi malesuada quis mi non varius. Nulla commodo maximus lobortis. Curabitur in ex ut lorem maximus hendrerit. Duis id dolor lacus. Ut venenatis sodales nibh eu finibus. Aliquam erat volutpat.
+            Sed placerat eros at gravida porttitor. Nunc nisi tortor, rhoncus a est in, ullamcorper semper lectus. Donec gravida, tortor id accumsan venenatis, arcu leo accumsan elit, nec ornare enim ipsum ac diam.
+            In pellentesque quam odio, ac faucibus ex mattis sed. Mauris tellus orci, tristique nec arcu in, elementum sollicitudin dui. Aliquam eu est non magna suscipit varius a eu tellus. Quisque venenatis porta metus, quis laoreet ligula.
+            Duis porta lectus quis commodo congue.
+        """
+        )
+        
+        text_area.config(state="disabled")
         
         print(f"Guide opened: {self.help_selection.get()}")
 
@@ -768,7 +820,11 @@ class BezierGUI:
         self.root.mainloop()
 
     def quit(self, _event=None) -> None:
-        self.root.destroy()
+        if self.help_window is not None:
+            self.help_window.destroy()
+            self.help_window = None
+        else:
+            self.root.destroy()
 
 
 if __name__ == "__main__":
