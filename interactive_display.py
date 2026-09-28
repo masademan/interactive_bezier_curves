@@ -1,7 +1,8 @@
 import numpy as np
 import tkinter as tk
-from typing import Callable
 from tkinter import messagebox
+from fractions import Fraction
+from typing import Callable, Literal
 from bezier_curve import get_bezier_curve_points
 
 
@@ -70,18 +71,54 @@ def coord_in_list(coord_to_find: np.ndarray, all_coords: list[np.ndarray]) -> bo
     for coord in all_coords:
         if (coord_to_find == coord).all():
             return True
-    
+
     return False
+
+
+class MoveablePointInfo:
+    def __init__(self):
+        self.mode: Literal["drag", "select", None] = None
+        self.point_idx: int | None = None
+        self.og_point_coord: tuple[float, float] | np.ndarray | None = None
+        self.og_mouse_coord: tuple[float, float] | np.ndarray | None = None
+
+    def set_mode(self, mode: Literal["drag", "select", None]) -> None:
+        self.mode = mode
+
+    def set_point_idx(self, idx: int) -> None:
+        self.point_idx = idx
+
+    def set_og_point_coord(self, coord: tuple[float, float] | np.ndarray) -> None:
+        self.og_point_coord = coord
+
+    def set_og_mouse_coord(self, coord: tuple[float, float] | np.ndarray) -> None:
+        self.og_mouse_coord = coord
+
+    def get_new_point_coord(self, mouse_coord: tuple[float, float] | np.ndarray) -> np.ndarray:
+        return np.array(self.og_point_coord) + (np.array(mouse_coord) - np.array(self.og_mouse_coord))
+
+    def reset(self):
+        self.mode = None
+        self.point_idx = None
+        self.og_point_coord = None
+        self.og_mouse_coord = None
 
 
 class BezierGUI:
     def __init__(self, title="Bezier GUI", debug=False):
         self.debug = debug
 
+        self.colors = {
+            "selected_control_point": "orange",
+            "sampled_points": "dodger blue",
+            "control_points": "red",
+            "curve": "blue",
+        }
+
         # Initialize window
         self.root = tk.Tk()
         self.root.title(title)
-        self.root.minsize(1080, 825)
+        self.root.minsize(1080, 955)
 
         self.root.bind("<Control-w>", self.quit)
         self.root.bind("<Escape>", self.quit)
@@ -99,11 +136,14 @@ class BezierGUI:
         self.canvas.pack(side="top", fill="both", expand=True)
 
         self.canvas.bind("<Configure>", self.draw)
-        
-        self.canvas.bind("<Button-1>", lambda event: print("Clicked"))
-        self.canvas.bind("<Button-3>", lambda event: print("Right Clicked"))
-        self.canvas.bind("<B1-Motion>", lambda event: print("Click + Drag"))
-        self.canvas.bind("<ButtonRelease-1>", lambda event: print("Released"))
+
+        # Allowing the user to drag and select the control points
+        self.movable_point_info = MoveablePointInfo()
+        # self.mouse_pos_info = MousePos()
+        self.canvas.bind("<Button-1>", self.control_point_left_click)
+        self.canvas.bind("<B1-Motion>", self.control_point_left_click_drag)
+        self.canvas.bind("<ButtonRelease-1>", self.control_point_left_click_release)
+        self.canvas.bind("<Button-3>", self.control_point_right_click)
 
         # Right frame (controls)
         self.right_frame = tk.Frame(self.main_frame, width=200, padx=10)
@@ -112,7 +152,7 @@ class BezierGUI:
         # Controls
         tk.Label(self.right_frame, text="Controls", font=("Arial", 12, "bold")).pack(pady=10)
 
-        # Grid control
+        # Grid settings
         self.grid_settings_frame = tk.Frame(self.right_frame, bg="gray75")
         self.grid_settings_frame.pack(fill=tk.X, pady=5)
         tk.Label(
@@ -121,13 +161,16 @@ class BezierGUI:
             font=("Arial", 12, "bold"),
             bg="gray75",
         ).pack(padx=5, pady=5)
+
+        #   Grid cell size
         self.grid_cell_size = 50
         self.grid_cell_size_var, self.grid_cell_size_spinbox, self.grid_cell_size_confirm = create_number_input(
             self.grid_settings_frame, "Grid cell size", 25, 500, increment=25, font_size=11, command=self.set_grid_cell_size
         )
         self.grid_cell_size_var.set(self.grid_cell_size)
 
-        # Number of control points
+        # Control point settings
+
         self.control_point_settings_frame = tk.Frame(self.right_frame, bg="gray75")
         self.control_point_settings_frame.pack(fill=tk.X, pady=5)
         tk.Label(
@@ -136,9 +179,34 @@ class BezierGUI:
             font=("Arial", 12, "bold"),
             bg="gray75",
         ).pack(padx=5, pady=5)
+
+        self.left_control_point_settings_frame = tk.Frame(self.control_point_settings_frame, bg="gray75")
+        self.left_control_point_settings_frame.pack(fill=tk.Y, pady=5, side=tk.LEFT)
+
+        self.right_control_point_settings_frame = tk.Frame(self.control_point_settings_frame, bg="gray75")
+        self.right_control_point_settings_frame.pack(fill=tk.Y, pady=5, side=tk.RIGHT)
+
+        #   Snapping interval
+        tk.Label(self.left_control_point_settings_frame, text="Snapping interval", font=("Arial", 11), bg="gray75").pack(padx=5, pady=5)
+        self.snapping_intervals = ["1", "1/2", "1/3", "1/4", "1/5"]
+        self.snapping_intervals_selection = tk.StringVar()
+        self.snapping_intervals_selection.set(self.snapping_intervals[1])
+        self.snapping_intervals_dropdown = tk.OptionMenu(
+            self.left_control_point_settings_frame, self.snapping_intervals_selection, *self.snapping_intervals
+        )
+        self.snapping_intervals_dropdown.pack(pady=5)
+
+        #   Amount to shift w/ arrow keys
+        self.shift_amount = 0.25
+        self.shift_amount_var, self.shift_amount_spinbox, self.shift_amount_confirm = create_number_input(
+            self.left_control_point_settings_frame, "Shift amount", 0, 1, increment=0.1, font_size=11, command=self.set_shift_amount, use_float=True
+        )
+        self.shift_amount_var.set(self.shift_amount)
+
+        #   Num control points
         self.num_control_points = 4
         self.num_control_points_var, self.num_control_points_spinbox, self.num_control_points_confirm = create_number_input(
-            self.control_point_settings_frame, "Num control points", 2, 5, font_size=11, command=self.set_num_control_points
+            self.right_control_point_settings_frame, "Num control points", 2, 5, font_size=11, command=self.set_num_control_points
         )
         self.num_control_points_var.set(self.num_control_points)
 
@@ -149,17 +217,23 @@ class BezierGUI:
             np.array([2, 0]),
         ]
 
-        # Size of control points
+        #   Control point radius
         self.control_point_radius = 7
         self.control_point_radius_var, self.control_point_radius_spinbox, self.control_point_radius_confirm = create_number_input(
-            self.control_point_settings_frame, "Control point radius", 1, 30, font_size=11, command=self.set_control_point_radius, use_float=True
+            self.right_control_point_settings_frame,
+            "Control point radius",
+            1,
+            30,
+            font_size=11,
+            command=self.set_control_point_radius,
+            use_float=True,
         )
         self.control_point_radius_var.set(self.control_point_radius)
 
-        # Show lines between control points
+        #   Show lines between control points
         self.show_control_lines_var = tk.BooleanVar()
         self.show_control_lines_checkbox = tk.Checkbutton(
-            self.control_point_settings_frame,
+            self.right_control_point_settings_frame,
             text="Show lines between\ncontrol points",
             bg="gray75",
             activebackground="gray75",
@@ -184,25 +258,28 @@ class BezierGUI:
         self.right_bezier_settings_frame = tk.Frame(self.bezier_curve_settings_frame, bg="gray75")
         self.right_bezier_settings_frame.pack(fill=tk.Y, pady=5, side=tk.RIGHT)
 
+        #   Sample point radius
         self.sample_point_radius = 5
         self.sample_point_radius_var, self.sample_point_radius_spinbox, self.sample_point_radius_confirm = create_number_input(
-            self.left_bezier_settings_frame, "Sample point radius", 1, 20, font_size=11, command=self.set_sample_point_radius
+            self.left_bezier_settings_frame, "Sample point radius", 1, 20, font_size=11, command=self.set_sample_point_radius, use_float=True
         )
         self.sample_point_radius_var.set(self.sample_point_radius)
 
+        #   Curve linewidth
         self.curve_linewidth = 2
         self.curve_linewidth_var, self.curve_linewidth_spinbox, self.curve_linewidth_confirm = create_number_input(
             self.left_bezier_settings_frame, "Curve linewidth", 1, 10, font_size=11, command=self.set_curve_linewidth
         )
         self.curve_linewidth_var.set(self.curve_linewidth)
 
+        #   Curve resolution
         self.curve_resolution = 5
         self.resolution_var, self.resolution_spinbox, self.resolution_confirm = create_number_input(
             self.right_bezier_settings_frame, "Curve resolution", 1, 300, font_size=11, command=self.set_curve_resolution
         )
         self.resolution_var.set(self.curve_resolution)
 
-        # Show sampled points in Bezier curve
+        #   Show sampled points
         self.show_points_var = tk.BooleanVar()
         self.show_points_checkbox = tk.Checkbutton(
             self.right_bezier_settings_frame,
@@ -214,6 +291,27 @@ class BezierGUI:
         )
         self.show_points_checkbox.pack(fill=tk.X, pady=5)
 
+        # Help view
+        self.help_frame = tk.Frame(self.right_frame, bg="gray75")
+        self.help_frame.pack(fill=tk.X, pady=5)
+        tk.Label(
+            self.help_frame,
+            text="Help",
+            font=("Arial", 12, "bold"),
+            bg="gray75",
+        ).pack(padx=5, pady=5)
+
+        #   Help selection TODO
+        help_sections = ["Controls", "Function"]
+        self.help_selection = tk.StringVar()
+        self.help_selection.set(help_sections[0])
+        self.help_dropdown = tk.OptionMenu(self.help_frame, self.help_selection, *help_sections)
+        self.help_dropdown.pack(pady=5)
+
+        #   Help open button
+        self.help_open_button = tk.Button(self.help_frame, text="Open guide", command=self.open_help_guide)
+        self.help_open_button.pack(fill=tk.X, padx=5, pady=5)
+
         # Reset button
         btn_reset = tk.Button(self.right_frame, text="Reset", command=self.reset)
         btn_reset.pack(fill=tk.X, pady=5)
@@ -221,6 +319,75 @@ class BezierGUI:
         # Quit button
         btn_quit = tk.Button(self.right_frame, text="Quit", command=self.quit)
         btn_quit.pack(fill=tk.X, pady=5)
+
+    def control_point_left_click(self, event: tk.Event | None = None):
+        self.movable_point_info.reset()
+        
+        point_idx = self.get_point_hovered_over((event.x, event.y))
+
+        if point_idx != -1:
+            self.movable_point_info.set_og_point_coord(self.control_points[point_idx])
+            self.movable_point_info.set_og_mouse_coord(self.canvas_to_coord((event.x, event.y)))
+            self.movable_point_info.set_point_idx(point_idx)
+            self.movable_point_info.set_mode("drag")
+        
+        self.draw_control_points()
+
+    def control_point_left_click_drag(self, event: tk.Event | None = None):
+        if self.movable_point_info.mode != "drag":
+            return
+        
+        self.control_points[self.movable_point_info.point_idx] = self.process_new_point_coord(self.movable_point_info.get_new_point_coord(self.canvas_to_coord((event.x, event.y))))
+        
+        self.draw_bezier_curve()
+        self.draw_control_points()
+
+    def control_point_left_click_release(self, _event: tk.Event | None = None):
+        self.movable_point_info.reset()
+        self.draw_bezier_curve()
+        self.draw_control_points()
+
+    def control_point_right_click(self, event: tk.Event | None = None):
+        point_idx = self.get_point_hovered_over((event.x, event.y))
+        
+        if not(point_idx == -1 or self.movable_point_info.mode == "drag"):
+            if point_idx == self.movable_point_info.point_idx:
+                self.movable_point_info.reset()
+            elif self.movable_point_info.mode in [None, "select"]:
+                self.movable_point_info.set_mode("select")
+                self.movable_point_info.set_point_idx(point_idx)
+        elif point_idx == -1:
+            self.movable_point_info.reset()
+        
+        self.draw_control_points()
+
+    def get_point_hovered_over(self, mouse_coord: tuple[float, float] | np.ndarray) -> int:
+        point_idx = -1
+        smallest_dist = float("inf")
+
+        for i in range(len(self.control_points)):
+            point = self.control_points[i]
+
+            is_in_area, dist = in_circle_area(*mouse_coord, *self.coord_to_canvas(point), self.control_point_radius)
+
+            if is_in_area and dist < smallest_dist:
+                point_idx = i
+                smallest_dist = dist
+
+        return point_idx
+
+    def process_new_point_coord(self, point_coord: tuple[float, float] | np.ndarray) -> np.ndarray: # TODO
+        return point_coord
+
+    def set_shift_amount(self, _event=None):
+        if not self.num_submission(self.shift_amount_spinbox, "shift amount", True):
+            return
+
+        self.shift_amount = self.limit_to_spinbox_range(self.shift_amount_spinbox, self.shift_amount_var.get())
+        self.shift_amount = int(self.shift_amount) if abs(int(self.shift_amount) - self.shift_amount) <= 1e-5 else self.shift_amount
+        self.shift_amount_var.set(self.shift_amount)
+
+        self.draw_control_points()
 
     def set_grid_cell_size(self, _event=None):
         if not self.num_submission(self.grid_cell_size_spinbox, "grid cell size"):
@@ -256,9 +423,9 @@ class BezierGUI:
 
             canvas_x = (middle_w - offset) % self.grid_cell_size + offset
             canvas_y = (middle_h - offset) % self.grid_cell_size + offset
-            
+
             new_coord = np.array(self.canvas_to_coord((canvas_x, canvas_y)))
-            
+
             if coord_in_list(new_coord, self.control_points):
                 messagebox.showerror("number of control points error", "First move the new control point out of the way")
                 self.num_control_points -= 1
@@ -293,10 +460,13 @@ class BezierGUI:
         self.draw_control_points()
 
     def set_sample_point_radius(self, _event=None):
-        if not self.num_submission(self.sample_point_radius_spinbox, "number of control points"):
+        if not self.num_submission(self.sample_point_radius_spinbox, "number of control points", True):
             return
 
-        self.sample_point_radius = int(self.limit_to_spinbox_range(self.sample_point_radius_spinbox, self.sample_point_radius_var.get()))
+        self.sample_point_radius = self.limit_to_spinbox_range(self.sample_point_radius_spinbox, self.sample_point_radius_var.get())
+        self.sample_point_radius = (
+            int(self.sample_point_radius) if abs(int(self.sample_point_radius) - self.sample_point_radius) <= 1e-5 else self.sample_point_radius
+        )
         self.sample_point_radius_var.set(self.sample_point_radius)
 
         self.draw_bezier_curve()
@@ -396,8 +566,10 @@ class BezierGUI:
                     *self.coord_to_canvas(p1), *self.coord_to_canvas(p2), fill="gray55", width=2, tags="control_points", dash=(5, 2)
                 )
 
-        for control_point in self.control_points:
-            draw_circle(self.canvas, *self.coord_to_canvas(control_point), self.control_point_radius, fill="red", tags="control_points")
+        for i in range(len(self.control_points)):
+            control_point = self.control_points[i]
+            fill_color = self.colors["selected_control_point"] if i == self.movable_point_info.point_idx else self.colors["control_points"]
+            draw_circle(self.canvas, *self.coord_to_canvas(control_point), self.control_point_radius, fill=fill_color, tags="control_points")
 
     def draw_bezier_curve(self):
         self.canvas.delete("bezier_curve")
@@ -411,7 +583,7 @@ class BezierGUI:
             self.canvas.create_line(
                 *self.coord_to_canvas(p1),
                 *self.coord_to_canvas(p2),
-                fill="blue",
+                fill=self.colors["curve"],
                 width=self.curve_linewidth,
                 tags="bezier_curve",
             )
@@ -421,22 +593,35 @@ class BezierGUI:
                     self.canvas,
                     *self.coord_to_canvas(p1),
                     self.curve_linewidth // 2,
-                    fill="blue",
-                    outline="blue",
+                    fill=self.colors["curve"],
+                    outline=self.colors["curve"],
                     tags="bezier_curve",
                 )
 
         if self.show_points_var.get():
             for i in range(1, len(bezier_curve_points) - 1):
                 point = bezier_curve_points[i]
-                draw_circle(self.canvas, *self.coord_to_canvas(point), self.sample_point_radius, fill="dodger blue", tags="bezier_curve")
+                draw_circle(
+                    self.canvas, *self.coord_to_canvas(point), self.sample_point_radius, fill=self.colors["sampled_points"], tags="bezier_curve"
+                )
+
+    def open_help_guide(self):  # TODO
+        print(f"Guide opened: {self.help_selection.get()}")
 
     def reset(self):
-        # Reset grid cell size
+        # Grid settings
+        #   Reset grid cell size
         self.grid_cell_size = 50
         self.grid_cell_size_var.set(self.grid_cell_size)
 
-        # Reset control points
+        # Control point settings
+        #   Reset snapping interval
+        self.snapping_intervals_selection.set(self.snapping_intervals[1])
+
+        #   Reset shift amount
+        self.shift_amount_var.set(0.25)
+
+        #   Reset control points
         self.control_points = [
             np.array([-2, 0]),
             np.array([-1.75, 2]),
@@ -447,23 +632,27 @@ class BezierGUI:
         self.num_control_points = 4
         self.num_control_points_var.set(self.num_control_points)
 
-        # Reset control point radius
+        #   Reset control point radius
         self.control_point_radius = 7
         self.control_point_radius_var.set(self.control_point_radius)
 
-        # Reset sample point radius
+        #   Reset show lines between points option
+        self.show_control_lines_var.set(False)
+
+        # Bezier surve settings
+        #   Reset sample point radius
         self.sample_point_radius = 5
         self.sample_point_radius_var.set(self.sample_point_radius)
 
-        # Reset curve linewidth
+        #   Reset curve linewidth
         self.curve_linewidth = 2
         self.curve_linewidth_var.set(self.curve_linewidth)
 
-        # Reset resolution
+        #   Reset resolution
         self.curve_resolution = 5
         self.resolution_var.set(self.curve_resolution)
 
-        # Reset show sampled points
+        #   Reset show sampled points
         self.show_points_var.set(False)
 
         self.draw()
