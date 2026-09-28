@@ -5,6 +5,15 @@ from fractions import Fraction
 from typing import Callable, Literal
 from bezier_curve import get_bezier_curve_points
 
+"""
+TODO:
+Add help guide
+Add a randomizer button that puts the points in random points
+Setting to hide control points
+Button to show the coords of all the control points in a new window
+Little label in bottom right corner to show the coord of the point you are dragging/selecting
+"""
+
 
 # Helper functions
 def draw_circle(canvas: tk.Canvas, x: float, y: float, radius: float, **kwargs) -> int:
@@ -133,7 +142,7 @@ class BezierGUI:
         self.root.bind("<Down>", lambda _event: self.move_point_in_dir("<Down>"))
         self.root.bind("<Left>", lambda _event: self.move_point_in_dir("<Left>"))
         self.root.bind("<Right>", lambda _event: self.move_point_in_dir("<Right>"))
-        
+
         # Help window
         self.help_window = None
 
@@ -181,10 +190,54 @@ class BezierGUI:
             bg="gray75",
         ).pack(padx=5, pady=5)
 
+        self.left_grid_settings_frame = tk.Frame(self.grid_settings_frame, bg="gray75")
+        self.left_grid_settings_frame.pack(side=tk.LEFT, fill=tk.Y)
+
+        self.right_grid_settings_frame = tk.Frame(self.grid_settings_frame, bg="gray75")
+        self.right_grid_settings_frame.pack(side=tk.RIGHT, fill=tk.Y)
+
+        #   Toggle grid
+        self.show_grid_var = tk.BooleanVar()
+        self.show_grid_checkbox = tk.Checkbutton(
+            self.left_grid_settings_frame,
+            text="Show grid",
+            bg="gray75",
+            activebackground="gray75",
+            variable=self.show_grid_var,
+            command=self.draw,
+        )
+        self.show_grid_checkbox.pack(fill=tk.X, pady=5)
+        self.show_grid_var.set(True)
+
+        #   Toggle axes
+        self.show_axes_var = tk.BooleanVar()
+        self.show_axes_checkbox = tk.Checkbutton(
+            self.left_grid_settings_frame,
+            text="Show axes",
+            bg="gray75",
+            activebackground="gray75",
+            variable=self.show_axes_var,
+            command=self.draw,
+        )
+        self.show_axes_checkbox.pack(fill=tk.X, pady=5)
+        self.show_axes_var.set(True)
+
+        #   Toggle mouse coords
+        self.show_mouse_coords_var = tk.BooleanVar()
+        self.show_mouse_coords_checkbox = tk.Checkbutton(
+            self.left_grid_settings_frame,
+            text="Show mouse coords",
+            bg="gray75",
+            activebackground="gray75",
+            variable=self.show_mouse_coords_var,
+            command=lambda: print("toggling mouse coords"),
+        )
+        self.show_mouse_coords_checkbox.pack(fill=tk.X, padx=5, pady=5)
+
         #   Grid cell size
         self.grid_cell_size = 50
         self.grid_cell_size_var, self.grid_cell_size_spinbox, self.grid_cell_size_confirm = create_number_input(
-            self.grid_settings_frame, "Grid cell size", 25, 500, increment=25, font_size=11, command=self.set_grid_cell_size
+            self.right_grid_settings_frame, "Grid cell size", 25, 500, increment=25, font_size=11, command=self.set_grid_cell_size
         )
         self.grid_cell_size_var.set(self.grid_cell_size)
 
@@ -320,12 +373,21 @@ class BezierGUI:
             bg="gray75",
         ).pack(padx=5, pady=5)
 
-        #   Help selection TODO
-        help_sections = ["Quick start", "Grid settings", "Control point settings", "Bezier curve settings", "Help guides", "Controls", "Shortcuts", "Function"]
+        #   Help selection
+        help_sections = [
+            "Quick start",
+            "Help guides",
+            "Grid settings",
+            "Control point settings",
+            "Bezier curve settings",
+            "Controls",
+            "Shortcuts",
+            "Usage",
+        ]
         self.help_selection = tk.StringVar()
         self.help_selection.set(help_sections[0])
         self.help_dropdown = tk.OptionMenu(self.help_frame, self.help_selection, *help_sections)
-        self.help_dropdown.pack(pady=5)
+        self.help_dropdown.pack(fill=tk.X, padx=5, pady=5)
 
         #   Help open button
         self.help_open_button = tk.Button(self.help_frame, text="Open guide", command=self.open_help_guide)
@@ -416,23 +478,23 @@ class BezierGUI:
     def track_special_key_press(self, event: tk.Event | None = None) -> None:
         self.control_pressed = self.key_press_logic(event, "Control", self.control_pressed)
         self.shift_pressed = self.key_press_logic(event, "Shift", self.shift_pressed)
-        
+
     def key_press_logic(self, event: tk.Event, key: str, current_key_state: bool) -> bool:
         if key in event.keysym and not current_key_state:
             return True
-        
+
         return current_key_state
-        
+
     def track_special_key_release(self, event: tk.Event | None = None) -> None:
         self.control_pressed = self.key_release_logic(event, "Control", self.control_pressed)
         self.shift_pressed = self.key_release_logic(event, "Shift", self.shift_pressed)
-        
+
     def key_release_logic(self, event: tk.Event, key: str, current_key_state: bool) -> bool:
         if key in event.keysym and current_key_state:
             return False
-        
+
         return current_key_state
-        
+
     def process_new_point_coord(self, og_point_coord: np.ndarray, og_mouse_movement: np.ndarray) -> np.ndarray:
         mouse_movement = og_mouse_movement.copy()
 
@@ -440,7 +502,9 @@ class BezierGUI:
             # Make the point snap according to the interval set using self.snapping_intervals_selection
             # pseudocode formula: round((point + mouse) / interval) * interval
             snapping_interval_fraction = Fraction(self.snapping_intervals_selection.get())
-            return (np.round(((og_point_coord + og_mouse_movement) / snapping_interval_fraction).astype(float)) * snapping_interval_fraction).astype(float)
+            return (np.round(((og_point_coord + og_mouse_movement) / snapping_interval_fraction).astype(float)) * snapping_interval_fraction).astype(
+                float
+            )
 
         if self.shift_pressed:
             # Make the point move only vertically or horizontally
@@ -489,15 +553,8 @@ class BezierGUI:
 
         # Add points
         if len(self.control_points) < self.num_control_points:
-            middle_w = self.canvas.winfo_width() // 2 + 1
-            middle_h = self.canvas.winfo_height() // 2 + 1
-
-            offset = self.grid_cell_size // 2
-
-            canvas_x = (middle_w - offset) % self.grid_cell_size + offset
-            canvas_y = (middle_h - offset) % self.grid_cell_size + offset
-
-            new_coord = np.array(self.canvas_to_coord((canvas_x, canvas_y)))
+            xy_range = self.get_graph_coord_limits()
+            new_coord = np.array([xy_range[0][0], xy_range[1][1]])
 
             if coord_in_list(new_coord, self.control_points):
                 messagebox.showerror("number of control points error", "First move the new control point out of the way")
@@ -576,6 +633,23 @@ class BezierGUI:
 
         return True
 
+    def get_graph_coord_limits(self) -> tuple[tuple[float, float], tuple[float, float]]:
+        """
+        Gets the range for the x coordinate in the graph, as well as the y coord
+        The output is formatted like tuple[x_range, y_range], where the range is the smaller number then bigger number
+        """
+        middle_w = self.canvas.winfo_width() // 2 + 1
+        middle_h = self.canvas.winfo_height() // 2 + 1
+
+        offset = self.grid_cell_size // 2
+
+        canvas_x = (middle_w - offset) % self.grid_cell_size + offset
+        canvas_y = (middle_h - offset) % self.grid_cell_size + offset
+
+        low_x, high_y = self.canvas_to_coord((canvas_x, canvas_y))
+        
+        return ((low_x, -low_x), (-high_y, high_y))
+
     def coord_to_canvas(self, coord: tuple[float, float] | np.ndarray) -> tuple[float, float]:
         x, y = coord
 
@@ -613,19 +687,21 @@ class BezierGUI:
         middle_h = height // 2 + 1
 
         # Draw grid
-        for i in range(middle_w, width, self.grid_cell_size):
-            self.canvas.create_line(i, 0, i, height, tag="grid_line", fill="lightgray")
-        for i in range(middle_w, -1, -self.grid_cell_size):
-            self.canvas.create_line(i, 0, i, height, tag="grid_line", fill="lightgray")
+        if self.show_grid_var.get():
+            for i in range(middle_w, width, self.grid_cell_size):
+                self.canvas.create_line(i, 0, i, height, tag="grid_line", fill="lightgray")
+            for i in range(middle_w, -1, -self.grid_cell_size):
+                self.canvas.create_line(i, 0, i, height, tag="grid_line", fill="lightgray")
 
-        for i in range(middle_h, height, self.grid_cell_size):
-            self.canvas.create_line(0, i, width, i, tag="grid_line", fill="lightgray")
-        for i in range(middle_h, -1, -self.grid_cell_size):
-            self.canvas.create_line(0, i, width, i, tag="grid_line", fill="lightgray")
+            for i in range(middle_h, height, self.grid_cell_size):
+                self.canvas.create_line(0, i, width, i, tag="grid_line", fill="lightgray")
+            for i in range(middle_h, -1, -self.grid_cell_size):
+                self.canvas.create_line(0, i, width, i, tag="grid_line", fill="lightgray")
 
         # Draw axis lines
-        self.canvas.create_line(middle_w, 0, middle_w, height, tag="grid_line", fill="black", width=2)
-        self.canvas.create_line(0, middle_h, width, middle_h, tag="grid_line", fill="black", width=2)
+        if self.show_axes_var.get():
+            self.canvas.create_line(middle_w, 0, middle_w, height, tag="grid_line", fill="black", width=2)
+            self.canvas.create_line(0, middle_h, width, middle_h, tag="grid_line", fill="black", width=2)
 
     def draw_control_points(self) -> None:
         self.canvas.delete("control_points")
@@ -679,25 +755,26 @@ class BezierGUI:
                 )
 
     def open_help_guide(self) -> None:  # TODO
-        messagebox.showinfo("Feature coming soon",
-        """
+        messagebox.showinfo(
+            "Feature coming soon",
+            """
             This feature will come soon
             I still need to write out all the docs
-        """
+        """,
         )
         # # New window + scolling text test
         # self.help_window = tk.Toplevel(self.root)
         # self.help_window.title("Test msg")
         # self.help_window.protocol("WM_DELETE_WINDOW", self.quit)
         # # new_window.geometry("300x200")
-        
+
         # scrollbar = tk.Scrollbar(self.help_window)
         # scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-        
+
         # text_area = tk.Text(self.help_window, font=("Arial", 11), wrap=tk.WORD, yscrollcommand=scrollbar.set)
         # text_area.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         # scrollbar.config(command=text_area.yview)
-        
+
         # text_area.insert(tk.END,
         # """
         #     Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras tincidunt risus in hendrerit gravida. Suspendisse vitae mi id nulla facilisis pretium at vel enim. Curabitur mattis urna sed elementum molestie.
@@ -729,9 +806,9 @@ class BezierGUI:
         #     Duis porta lectus quis commodo congue.
         # """
         # )
-        
+
         # text_area.config(state="disabled")
-        
+
         # print(f"Guide opened: {self.help_selection.get()}")
 
     def reset(self) -> None:
