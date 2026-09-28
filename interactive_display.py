@@ -94,8 +94,14 @@ class MoveablePointInfo:
     def set_og_mouse_coord(self, coord: tuple[float, float] | np.ndarray) -> None:
         self.og_mouse_coord = coord
 
-    def get_new_point_coord(self, mouse_coord: tuple[float, float] | np.ndarray) -> np.ndarray:
-        return np.array(self.og_point_coord) + (np.array(mouse_coord) - np.array(self.og_mouse_coord))
+    def get_og_point_coord(self) -> np.ndarray:
+        return np.array(self.og_point_coord)
+
+    def get_mouse_movement(self, mouse_coord: tuple[float, float] | np.ndarray) -> np.ndarray:
+        return np.array(mouse_coord) - np.array(self.og_mouse_coord)
+
+    def get_og_point_coord_and_mouse_movement(self, mouse_coord: tuple[float, float] | np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+        return self.get_og_point_coord(), self.get_mouse_movement(mouse_coord)
 
     def reset(self):
         self.mode = None
@@ -123,6 +129,11 @@ class BezierGUI:
         self.root.bind("<Control-w>", self.quit)
         self.root.bind("<Escape>", self.quit)
 
+        self.root.bind("<Up>", lambda event: self.move_point_in_dir("<Up>"))
+        self.root.bind("<Down>", lambda event: self.move_point_in_dir("<Down>"))
+        self.root.bind("<Left>", lambda event: self.move_point_in_dir("<Left>"))
+        self.root.bind("<Right>", lambda event: self.move_point_in_dir("<Right>"))
+
         # Main frame
         self.main_frame = tk.Frame(self.root)
         self.main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
@@ -139,11 +150,16 @@ class BezierGUI:
 
         # Allowing the user to drag and select the control points
         self.movable_point_info = MoveablePointInfo()
-        # self.mouse_pos_info = MousePos()
+
         self.canvas.bind("<Button-1>", self.control_point_left_click)
         self.canvas.bind("<B1-Motion>", self.control_point_left_click_drag)
         self.canvas.bind("<ButtonRelease-1>", self.control_point_left_click_release)
         self.canvas.bind("<Button-3>", self.control_point_right_click)
+
+        self.control_pressed = False
+        self.shift_pressed = False
+        self.root.bind("<KeyPress>", self.track_special_keys)
+        self.root.bind("<KeyRelease>", self.track_special_keys)
 
         # Right frame (controls)
         self.right_frame = tk.Frame(self.main_frame, width=200, padx=10)
@@ -206,7 +222,7 @@ class BezierGUI:
         #   Num control points
         self.num_control_points = 4
         self.num_control_points_var, self.num_control_points_spinbox, self.num_control_points_confirm = create_number_input(
-            self.right_control_point_settings_frame, "Num control points", 2, 5, font_size=11, command=self.set_num_control_points
+            self.right_control_point_settings_frame, "Num control points", 2, 10, font_size=11, command=self.set_num_control_points
         )
         self.num_control_points_var.set(self.num_control_points)
 
@@ -320,9 +336,25 @@ class BezierGUI:
         btn_quit = tk.Button(self.right_frame, text="Quit", command=self.quit)
         btn_quit.pack(fill=tk.X, pady=5)
 
-    def control_point_left_click(self, event: tk.Event | None = None):
+    def move_point_in_dir(self, dir: Literal["<Up>", "<Down>", "<Left>", "<Right>"]) -> None:
+        if self.movable_point_info.mode != "select":
+            return
+
+        dir_str_to_vector = {
+            "<Up>": np.array([0, 1]),
+            "<Down>": np.array([0, -1]),
+            "<Left>": np.array([-1, 0]),
+            "<Right>": np.array([1, 0]),
+        }
+
+        self.control_points[self.movable_point_info.point_idx] += self.shift_amount * dir_str_to_vector[dir]
+
+        self.draw_bezier_curve()
+        self.draw_control_points()
+
+    def control_point_left_click(self, event: tk.Event | None = None) -> None:
         self.movable_point_info.reset()
-        
+
         point_idx = self.get_point_hovered_over((event.x, event.y))
 
         if point_idx != -1:
@@ -330,27 +362,29 @@ class BezierGUI:
             self.movable_point_info.set_og_mouse_coord(self.canvas_to_coord((event.x, event.y)))
             self.movable_point_info.set_point_idx(point_idx)
             self.movable_point_info.set_mode("drag")
-        
+
         self.draw_control_points()
 
-    def control_point_left_click_drag(self, event: tk.Event | None = None):
+    def control_point_left_click_drag(self, event: tk.Event | None = None) -> None:
         if self.movable_point_info.mode != "drag":
             return
-        
-        self.control_points[self.movable_point_info.point_idx] = self.process_new_point_coord(self.movable_point_info.get_new_point_coord(self.canvas_to_coord((event.x, event.y))))
-        
+
+        self.control_points[self.movable_point_info.point_idx] = self.process_new_point_coord(
+            *self.movable_point_info.get_og_point_coord_and_mouse_movement(self.canvas_to_coord((event.x, event.y)))
+        )
+
         self.draw_bezier_curve()
         self.draw_control_points()
 
-    def control_point_left_click_release(self, _event: tk.Event | None = None):
+    def control_point_left_click_release(self, _event: tk.Event | None = None) -> None:
         self.movable_point_info.reset()
         self.draw_bezier_curve()
         self.draw_control_points()
 
-    def control_point_right_click(self, event: tk.Event | None = None):
+    def control_point_right_click(self, event: tk.Event | None = None) -> None:
         point_idx = self.get_point_hovered_over((event.x, event.y))
-        
-        if not(point_idx == -1 or self.movable_point_info.mode == "drag"):
+
+        if not (point_idx == -1 or self.movable_point_info.mode == "drag"):
             if point_idx == self.movable_point_info.point_idx:
                 self.movable_point_info.reset()
             elif self.movable_point_info.mode in [None, "select"]:
@@ -358,7 +392,7 @@ class BezierGUI:
                 self.movable_point_info.set_point_idx(point_idx)
         elif point_idx == -1:
             self.movable_point_info.reset()
-        
+
         self.draw_control_points()
 
     def get_point_hovered_over(self, mouse_coord: tuple[float, float] | np.ndarray) -> int:
@@ -376,10 +410,30 @@ class BezierGUI:
 
         return point_idx
 
-    def process_new_point_coord(self, point_coord: tuple[float, float] | np.ndarray) -> np.ndarray: # TODO
-        return point_coord
+    def track_special_keys(self, event: tk.Event | None = None) -> None:
+        self.control_pressed = "Control" in event.keysym
+        self.shift_pressed = "Shift" in event.keysym
 
-    def set_shift_amount(self, _event=None):
+    def process_new_point_coord(self, og_point_coord: np.ndarray, og_mouse_movement: np.ndarray) -> np.ndarray:
+        mouse_movement = og_mouse_movement.copy()
+
+        if self.control_pressed:
+            # Make the point snap according to the interval set using self.snapping_intervals_selection
+            # pseudocode formula: round((point + mouse) / interval) * interval
+            snapping_interval_fraction = Fraction(self.snapping_intervals_selection.get())
+            return (np.round(((og_point_coord + og_mouse_movement) / snapping_interval_fraction).astype(float)) * snapping_interval_fraction).astype(float)
+
+        if self.shift_pressed:
+            # Make the point move only vertically or horizontally
+            moved_x = abs(og_mouse_movement[0]) > abs(og_mouse_movement[1])
+            if moved_x:
+                mouse_movement[1] = 0
+            else:
+                mouse_movement[0] = 0
+
+        return og_point_coord + mouse_movement
+
+    def set_shift_amount(self, _event=None) -> None:
         if not self.num_submission(self.shift_amount_spinbox, "shift amount", True):
             return
 
@@ -389,7 +443,7 @@ class BezierGUI:
 
         self.draw_control_points()
 
-    def set_grid_cell_size(self, _event=None):
+    def set_grid_cell_size(self, _event=None) -> None:
         if not self.num_submission(self.grid_cell_size_spinbox, "grid cell size"):
             return
 
@@ -398,7 +452,7 @@ class BezierGUI:
 
         self.draw()
 
-    def set_num_control_points(self, _event=None):
+    def set_num_control_points(self, _event=None) -> None:
         if not self.num_submission(self.num_control_points_spinbox, "number of control points"):
             return
 
@@ -437,7 +491,7 @@ class BezierGUI:
         self.draw_bezier_curve()
         self.draw_control_points()
 
-    def set_control_point_radius(self, _event=None):
+    def set_control_point_radius(self, _event=None) -> None:
         if not self.num_submission(self.control_point_radius_spinbox, "size of control points", True):
             return
 
@@ -449,7 +503,7 @@ class BezierGUI:
 
         self.draw_control_points()
 
-    def set_curve_resolution(self, _event=None):
+    def set_curve_resolution(self, _event=None) -> None:
         if not self.num_submission(self.resolution_spinbox, "resolution"):
             return
 
@@ -459,7 +513,7 @@ class BezierGUI:
         self.draw_bezier_curve()
         self.draw_control_points()
 
-    def set_sample_point_radius(self, _event=None):
+    def set_sample_point_radius(self, _event=None) -> None:
         if not self.num_submission(self.sample_point_radius_spinbox, "number of control points", True):
             return
 
@@ -472,7 +526,7 @@ class BezierGUI:
         self.draw_bezier_curve()
         self.draw_control_points()
 
-    def set_curve_linewidth(self, _event=None):
+    def set_curve_linewidth(self, _event=None) -> None:
         if not self.num_submission(self.curve_linewidth_spinbox, "curve linewidth", True):
             return
 
@@ -525,12 +579,12 @@ class BezierGUI:
 
         return new_x, new_y
 
-    def draw(self, _event=None):
+    def draw(self, _event=None) -> None:
         self.draw_grid()
         self.draw_bezier_curve()
         self.draw_control_points()
 
-    def draw_grid(self, _event=None):
+    def draw_grid(self, _event=None) -> None:
         self.canvas.delete("grid_line")
 
         width = self.canvas.winfo_width()
@@ -554,7 +608,7 @@ class BezierGUI:
         self.canvas.create_line(middle_w, 0, middle_w, height, tag="grid_line", fill="black", width=2)
         self.canvas.create_line(0, middle_h, width, middle_h, tag="grid_line", fill="black", width=2)
 
-    def draw_control_points(self):
+    def draw_control_points(self) -> None:
         self.canvas.delete("control_points")
 
         if self.show_control_lines_var.get():
@@ -571,7 +625,7 @@ class BezierGUI:
             fill_color = self.colors["selected_control_point"] if i == self.movable_point_info.point_idx else self.colors["control_points"]
             draw_circle(self.canvas, *self.coord_to_canvas(control_point), self.control_point_radius, fill=fill_color, tags="control_points")
 
-    def draw_bezier_curve(self):
+    def draw_bezier_curve(self) -> None:
         self.canvas.delete("bezier_curve")
 
         bezier_curve_points = get_bezier_curve_points(self.control_points, int(self.curve_resolution))
@@ -605,10 +659,60 @@ class BezierGUI:
                     self.canvas, *self.coord_to_canvas(point), self.sample_point_radius, fill=self.colors["sampled_points"], tags="bezier_curve"
                 )
 
-    def open_help_guide(self):  # TODO
+    def open_help_guide(self) -> None:  # TODO
+        # messagebox.showinfo("Test msg", 
+        # """
+        #     Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras tincidunt risus in hendrerit gravida. Suspendisse vitae mi id nulla facilisis pretium at vel enim. Curabitur mattis urna sed elementum molestie. Interdum et malesuada fames ac ante ipsum primis in faucibus. Vestibulum id libero a orci cursus accumsan et in neque. Nulla in mauris quam. Fusce fermentum pharetra lectus, id tincidunt risus dictum eget. Proin tempus tincidunt scelerisque. Sed gravida tortor efficitur tortor tincidunt, eu faucibus nulla facilisis. Suspendisse eu nulla et leo efficitur porttitor ac varius quam. Mauris a sagittis quam. Quisque vitae quam vestibulum, facilisis justo et, blandit enim. Aliquam erat volutpat. Nulla semper, arcu ut imperdiet consectetur, urna dui tempor urna, eget mattis leo nisl eu turpis. Quisque in odio eu urna mattis elementum mattis ac magna.
+
+        #     Curabitur efficitur nisl non laoreet luctus. Maecenas suscipit eros neque, non sagittis leo blandit vel. Etiam nec dolor ac lacus auctor consequat id nec felis. Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Aenean vel nibh quis urna faucibus scelerisque. Proin quam eros, pulvinar a tristique eget, posuere et urna. Nulla a nisi et ligula ultricies auctor et nec augue. Donec in urna non enim interdum iaculis. Donec fringilla maximus pellentesque. Maecenas semper aliquam orci eu varius. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Phasellus facilisis venenatis eleifend. Pellentesque purus nisi, bibendum ac libero ac, consequat imperdiet quam. Pellentesque leo tellus, sodales at erat in, elementum ultrices velit. Integer non feugiat ex, egestas interdum ex. Nunc quam tellus, commodo sed tellus quis, aliquam faucibus sem.
+
+        #     Nunc feugiat, velit non mollis imperdiet, tortor nunc malesuada lectus, eget porttitor lorem massa id turpis. Cras convallis libero nec urna venenatis, non malesuada ligula porttitor. Curabitur a tellus ac ex tempus porttitor sed in ipsum. Praesent tempus risus non tellus suscipit venenatis eu mattis nulla. Praesent sem est, pretium quis tempus ac, molestie id purus. Nunc rutrum tortor arcu, sit amet tincidunt nisl tincidunt vel. Cras malesuada malesuada pretium. Curabitur ut lacus metus. Integer erat felis, luctus a pulvinar et, egestas quis neque. Duis venenatis, felis nec volutpat tincidunt, augue purus dignissim turpis, at bibendum risus mi eget elit. Nam vel tellus sit amet arcu tempor interdum non faucibus ante. Sed in magna at ex vulputate maximus ut a nisi. Suspendisse aliquam enim vitae massa bibendum sollicitudin. Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+
+        #     Morbi iaculis ex scelerisque lacus dapibus posuere. Sed malesuada rutrum placerat. Vivamus lobortis ut sem a fermentum. Nulla tempus hendrerit ex in accumsan. Integer augue sapien, eleifend non nibh a, convallis iaculis est. Integer orci nisi, volutpat eleifend arcu egestas, volutpat condimentum sem. Morbi a orci facilisis, euismod purus ullamcorper, feugiat est. Maecenas accumsan magna sit amet odio efficitur finibus. Sed vel tellus pretium, venenatis ligula eu, scelerisque libero. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Ut nec aliquam velit, id commodo purus. Cras pretium lorem et laoreet convallis.
+
+        #     Morbi malesuada quis mi non varius. Nulla commodo maximus lobortis. Curabitur in ex ut lorem maximus hendrerit. Duis id dolor lacus. Ut venenatis sodales nibh eu finibus. Aliquam erat volutpat. Sed placerat eros at gravida porttitor. Nunc nisi tortor, rhoncus a est in, ullamcorper semper lectus. Donec gravida, tortor id accumsan venenatis, arcu leo accumsan elit, nec ornare enim ipsum ac diam. In pellentesque quam odio, ac faucibus ex mattis sed. Mauris tellus orci, tristique nec arcu in, elementum sollicitudin dui. Aliquam eu est non magna suscipit varius a eu tellus. Quisque venenatis porta metus, quis laoreet ligula. Duis porta lectus quis commodo congue.
+        # """
+        # )
+        
+        # new_window = tk.Toplevel(self.root)
+        # new_window.title("Test msg")
+        # # new_window.geometry("300x200")
+        
+        # tk.Label(new_window, text=
+        # """
+        #     Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras tincidunt risus in hendrerit gravida. Suspendisse vitae mi id nulla facilisis pretium at vel enim. Curabitur mattis urna sed elementum molestie.
+        #     Interdum et malesuada fames ac ante ipsum primis in faucibus. Vestibulum id libero a orci cursus accumsan et in neque. Nulla in mauris quam. Fusce fermentum pharetra lectus, id tincidunt risus dictum eget.
+        #     Proin tempus tincidunt scelerisque. Sed gravida tortor efficitur tortor tincidunt, eu faucibus nulla facilisis. Suspendisse eu nulla et leo efficitur porttitor ac varius quam. Mauris a sagittis quam.
+        #     Quisque vitae quam vestibulum, facilisis justo et, blandit enim. Aliquam erat volutpat. Nulla semper, arcu ut imperdiet consectetur, urna dui tempor urna, eget mattis leo nisl eu turpis.
+        #     Quisque in odio eu urna mattis elementum mattis ac magna.
+
+        #     Curabitur efficitur nisl non laoreet luctus. Maecenas suscipit eros neque, non sagittis leo blandit vel. Etiam nec dolor ac lacus auctor consequat id nec felis.
+        #     Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Aenean vel nibh quis urna faucibus scelerisque. Proin quam eros, pulvinar a tristique eget, posuere et urna.
+        #     Nulla a nisi et ligula ultricies auctor et nec augue. Donec in urna non enim interdum iaculis. Donec fringilla maximus pellentesque. Maecenas semper aliquam orci eu varius.
+        #     Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Phasellus facilisis venenatis eleifend. Pellentesque purus nisi, bibendum ac libero ac, consequat imperdiet quam.
+        #     Pellentesque leo tellus, sodales at erat in, elementum ultrices velit. Integer non feugiat ex, egestas interdum ex. Nunc quam tellus, commodo sed tellus quis, aliquam faucibus sem.
+
+        #     Nunc feugiat, velit non mollis imperdiet, tortor nunc malesuada lectus, eget porttitor lorem massa id turpis. Cras convallis libero nec urna venenatis, non malesuada ligula porttitor.
+        #     Curabitur a tellus ac ex tempus porttitor sed in ipsum. Praesent tempus risus non tellus suscipit venenatis eu mattis nulla. Praesent sem est, pretium quis tempus ac, molestie id purus.
+        #     Nunc rutrum tortor arcu, sit amet tincidunt nisl tincidunt vel. Cras malesuada malesuada pretium. Curabitur ut lacus metus. Integer erat felis, luctus a pulvinar et, egestas quis neque.
+        #     Duis venenatis, felis nec volutpat tincidunt, augue purus dignissim turpis, at bibendum risus mi eget elit. Nam vel tellus sit amet arcu tempor interdum non faucibus ante. Sed in magna at ex vulputate maximus ut a nisi.
+        #     Suspendisse aliquam enim vitae massa bibendum sollicitudin. Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+
+        #     Morbi iaculis ex scelerisque lacus dapibus posuere. Sed malesuada rutrum placerat. Vivamus lobortis ut sem a fermentum. Nulla tempus hendrerit ex in accumsan. Integer augue sapien, eleifend non nibh a, convallis iaculis est.
+        #     Integer orci nisi, volutpat eleifend arcu egestas, volutpat condimentum sem. Morbi a orci facilisis, euismod purus ullamcorper, feugiat est. Maecenas accumsan magna sit amet odio efficitur finibus.
+        #     Sed vel tellus pretium, venenatis ligula eu, scelerisque libero. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Ut nec aliquam velit, id commodo purus.
+        #     Cras pretium lorem et laoreet convallis.
+
+        #     Morbi malesuada quis mi non varius. Nulla commodo maximus lobortis. Curabitur in ex ut lorem maximus hendrerit. Duis id dolor lacus. Ut venenatis sodales nibh eu finibus. Aliquam erat volutpat.
+        #     Sed placerat eros at gravida porttitor. Nunc nisi tortor, rhoncus a est in, ullamcorper semper lectus. Donec gravida, tortor id accumsan venenatis, arcu leo accumsan elit, nec ornare enim ipsum ac diam.
+        #     In pellentesque quam odio, ac faucibus ex mattis sed. Mauris tellus orci, tristique nec arcu in, elementum sollicitudin dui. Aliquam eu est non magna suscipit varius a eu tellus. Quisque venenatis porta metus, quis laoreet ligula.
+        #     Duis porta lectus quis commodo congue.
+        # """
+        # ).pack(padx=5, pady=5)
+        
         print(f"Guide opened: {self.help_selection.get()}")
 
-    def reset(self):
+    def reset(self) -> None:
         # Grid settings
         #   Reset grid cell size
         self.grid_cell_size = 50
@@ -660,10 +764,10 @@ class BezierGUI:
         if self.debug:
             print(self.root.winfo_width(), self.root.winfo_height())
 
-    def run_gui(self):
+    def run_gui(self) -> None:
         self.root.mainloop()
 
-    def quit(self, _event=None):
+    def quit(self, _event=None) -> None:
         self.root.destroy()
 
 
