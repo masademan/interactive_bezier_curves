@@ -1,3 +1,4 @@
+import random
 import numpy as np
 import tkinter as tk
 from tkinter.font import Font
@@ -9,9 +10,6 @@ from bezier_curve import get_bezier_curve_points
 """
 TODO:
 Add help guide
-Add a randomizer button that puts the points in random points
-Setting to hide control points
-Setting to hide Bezier curve
 Button to show the coords of all the control points in a new window
 """
 
@@ -140,7 +138,7 @@ class BezierGUI:
         # Initialize window
         self.root = tk.Tk()
         self.root.title(title)
-        self.root.minsize(1270, 960)
+        self.root.minsize(1320, 1015)
 
         self.root.bind("<Control-w>", self.quit)
         self.root.bind("<Escape>", self.quit)
@@ -154,6 +152,9 @@ class BezierGUI:
 
         # Help window
         self.help_window = None
+
+        # Control point pos
+        self.control_point_pos_window = None
 
         # Main frame
         self.main_frame = tk.Frame(self.root)
@@ -307,15 +308,15 @@ class BezierGUI:
         )
         self.shift_amount_var.set(self.shift_amount)
 
-        #   Control point pos randomizer TODO
+        #   Control point pos randomizer
         self.control_point_position_randomizer_button = tk.Button(
             self.left_control_point_settings_frame,
             text="Randomize control\npoint positions",
-            command=lambda: run_funcs(self.draw_control_points, self.draw_bezier_curve),
+            command=lambda: run_funcs(self.randomize_control_point_pos, self.draw_bezier_curve, self.draw_control_points),
         )
         self.control_point_position_randomizer_button.pack(fill=tk.X, padx=5, pady=5)
 
-        #   Setting to hide control points TODO
+        #   Setting to hide control points
         self.show_control_points_var = tk.BooleanVar()
         self.show_control_points_checkbox = tk.Checkbutton(
             self.left_control_point_settings_frame,
@@ -439,7 +440,7 @@ class BezierGUI:
         )
         self.show_sampled_points_checkbox.pack(fill=tk.X, pady=5)
 
-        #   Show bezier curve TODO
+        #   Show bezier curve
         self.show_bezier_curve_var = tk.BooleanVar()
         self.show_bezier_curve_checkbox = tk.Checkbutton(
             self.right_bezier_settings_frame,
@@ -490,6 +491,15 @@ class BezierGUI:
         btn_quit = tk.Button(self.right_frame, text="Quit", command=self.quit)
         btn_quit.pack(fill=tk.X, pady=5)
 
+    def randomize_control_point_pos(self) -> None:
+        xy_range = self.get_int_coord_limits()
+
+        for i in range(len(self.control_points)):
+            random_x = random.uniform(xy_range[0][0], xy_range[0][1])
+            random_y = random.uniform(xy_range[1][0], xy_range[1][1])
+
+            self.control_points[i] = np.array([random_x, random_y])
+
     def set_coords_to_show(self, event: tk.Event | None = None) -> None:
         if self.movable_point_info.point_idx == None:
             self.coords_to_show = self.canvas_to_coord((event.x, event.y))
@@ -521,7 +531,7 @@ class BezierGUI:
         limited_x = min(max(self.control_points[self.movable_point_info.point_idx][0], xy_range[0][0]), xy_range[0][1])
         limited_y = min(max(self.control_points[self.movable_point_info.point_idx][1], xy_range[1][0]), xy_range[1][1])
         self.control_points[self.movable_point_info.point_idx] = np.array([limited_x, limited_y])
-        
+
         self.coords_to_show = tuple(np.round(self.control_points[self.movable_point_info.point_idx], COORD_DECIMAL_ROUNDING))
 
         self.draw_coords()
@@ -908,6 +918,9 @@ class BezierGUI:
     def draw_control_points(self) -> None:
         self.canvas.delete("control_points")
 
+        if not self.show_control_points_var.get():
+            return
+
         if self.show_control_lines_var.get():
             for i in range(len(self.control_points) - 1):
                 p1 = self.control_points[i]
@@ -939,6 +952,9 @@ class BezierGUI:
 
     def draw_bezier_curve(self) -> None:
         self.canvas.delete("bezier_curve")
+
+        if not self.show_bezier_curve_var.get():
+            return
 
         bezier_curve_points = get_bezier_curve_points(self.control_points, int(self.curve_resolution))
 
@@ -979,6 +995,7 @@ class BezierGUI:
         self.canvas.delete("test")
 
         xy_range = self.get_int_coord_limits(self.grid_cell_size // 2)
+        # xy_range = self.get_graph_coord_limits()
 
         for i in [0, 1]:
             for j in [0, 1]:
@@ -997,6 +1014,9 @@ class BezierGUI:
                 I still need to write out all the docs
             """,
         )
+
+        # Similar code as the help guide
+        # self.control_point_pos_window
 
     def open_help_guide(self) -> None:  # TODO
         messagebox.showinfo(
@@ -1058,8 +1078,13 @@ class BezierGUI:
     def resize(self, _event=None) -> None:
         self.draw()
 
-    def reset(self) -> None:  # TODO: Finish setting up
+    def reset(self) -> None:
         # Grid settings
+        #   Reset show grid, show axes, and show coords
+        self.show_grid_var.set(True)
+        self.show_axes_var.set(True)
+        self.show_coords_var.set(False)
+
         #   Reset grid cell size
         self.grid_cell_size = 50
         self.grid_cell_size_var.set(self.grid_cell_size)
@@ -1070,6 +1095,9 @@ class BezierGUI:
 
         #   Reset shift amount
         self.shift_amount_var.set(0.25)
+
+        #   Reset show control points
+        self.show_control_points_var.set(True)
 
         #   Reset control points
         self.control_points = [
@@ -1105,10 +1133,15 @@ class BezierGUI:
         #   Reset show sampled points
         self.show_sampled_points_var.set(False)
 
+        #   Reset show Bezier curve
+        self.show_bezier_curve_var.set(True)
+
+        # Draw to show changes
         self.draw()
 
         if self.debug:
             print(self.root.winfo_width(), self.root.winfo_height())
+            print(self.get_graph_coord_limits())
 
     def run_gui(self) -> None:
         self.root.mainloop()
@@ -1117,6 +1150,9 @@ class BezierGUI:
         if self.help_window is not None:
             self.help_window.destroy()
             self.help_window = None
+        elif self.control_point_pos_window is not None:
+            self.control_point_pos_window.destroy()
+            self.control_point_pos_window = None
         else:
             self.root.destroy()
 
