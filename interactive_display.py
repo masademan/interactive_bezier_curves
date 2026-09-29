@@ -5,13 +5,16 @@ from tkinter.font import Font
 from tkinter import messagebox
 from fractions import Fraction
 from typing import Callable, Literal
+from tkinter_text_tag import clear_text_area
 from bezier_curve import get_bezier_curve_points
-from interactive_control_point_pos import show_control_point_pos_in_window
+from interactive_control_point_pos import (
+    setup_control_point_pos_window,
+    show_control_point_pos_in_window,
+)
 
 """
 TODO:
 Add help guide
-Button to show the coords of all the control points in a new window
 """
 
 COORD_DECIMAL_ROUNDING = 2
@@ -153,6 +156,7 @@ class BezierGUI:
         self.root.minsize(1320, 1015)
 
         self.root.bind("<Control-w>", self.quit)
+        self.root.bind("<Control-W>", lambda _event: self.root.destroy())
         self.root.bind("<Escape>", self.quit)
 
         self.root.bind("<Up>", lambda _event: self.move_point_in_dir("<Up>"))
@@ -167,6 +171,7 @@ class BezierGUI:
 
         # Control point pos
         self.control_point_pos_window = None
+        self.control_point_text_area = None
 
         # Main frame
         self.main_frame = tk.Frame(self.root)
@@ -619,6 +624,9 @@ class BezierGUI:
         self.draw_control_points()
 
     def get_point_hovered_over(self, mouse_coord: tuple[float, float] | np.ndarray) -> int:
+        if not self.show_control_points_var.get():
+            return -1
+        
         point_idx = -1
         smallest_dist = float("inf")
 
@@ -959,6 +967,10 @@ class BezierGUI:
                 fill=fill_color,
                 tags="control_points",
             )
+        
+        if self.control_point_text_area is not None:
+            clear_text_area(self.control_point_text_area)
+            show_control_point_pos_in_window(self.control_point_text_area, self.control_points)
 
     def draw_bezier_curve(self) -> None:
         self.canvas.delete("bezier_curve")
@@ -1001,26 +1013,27 @@ class BezierGUI:
                     tags="bezier_curve",
                 )
 
-    def open_control_point_pos_list(self) -> None:  # TODO
-        messagebox.showinfo(
-            "Feature coming soon",
-            """
-                This feature will come soon
-                I still need to write out all the docs
-            """,
-        )
-        
-        # self.control_point_pos_window = create_popup_window_toplevel(
-        #     self.root,
-        #     "Control point positions",
-        #     self.quit,
-        # )
+    def open_control_point_pos_list(self) -> None:
+        if self.control_point_pos_window != None:
+            messagebox.showinfo(
+                "Control point pos",
+                "A window showing the positions of the control points is already open",
+            )
+            self.control_point_pos_window.deiconify()
+            self.control_point_pos_window.lift()
+            self.control_point_pos_window.focus_force()
+            return
 
-        # show_control_point_pos_in_window(
-        #     self.control_point_pos_window,
-        #     self.control_points,
-        #     ("Arial", 11),
-        # )
+        self.control_point_pos_window = create_popup_window_toplevel(
+            self.root,
+            "Control point positions",
+            self.quit,
+        )
+
+        self.control_point_text_area = setup_control_point_pos_window(self.control_point_pos_window)
+        
+        clear_text_area(self.control_point_text_area)
+        show_control_point_pos_in_window(self.control_point_text_area, self.control_points)
 
     def open_help_guide(self) -> None:  # TODO
         messagebox.showinfo(
@@ -1030,6 +1043,7 @@ class BezierGUI:
                 I still need to write out all the docs
             """,
         )
+
         # # New window + scolling text test
         # self.help_window = tk.Toplevel(self.root)
         # self.help_window.title("Test msg")
@@ -1157,6 +1171,7 @@ class BezierGUI:
         elif self.control_point_pos_window is not None:
             self.control_point_pos_window.destroy()
             self.control_point_pos_window = None
+            self.control_point_text_area = None
         else:
             self.root.destroy()
 
