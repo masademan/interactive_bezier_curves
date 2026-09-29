@@ -3,6 +3,10 @@ import tkinter as tk
 from tkinter import messagebox
 
 # Tags in the form "stuff before tags [TAG_NAME]stuff between tags[TAG_NAME/] stuff after tags"
+# However, the opening and closing tag format can be customized
+# Do make sure that the tags are in a form that you can't type by accident in your normal text
+OPENING_TAG = "[{}]"
+CLOSING_TAG = "[{}/]"
 
 # tags have to be initialized in the form "tags = {[TAG]: {[CONFIG_NAME]: [CONFIG]}}"
 # Ex. 'tags = {"SUBSCRIPT": {"font": ("Arial", 8), "offset": -4}, "RED": {"foreground": "red"}}'
@@ -49,11 +53,11 @@ def tkinter_text_tag_formatter(text_area: tk.Text, tagged_text: str, tags: dict[
     tag_start_end_locs = {}
     formatting_error_tags = []
     for tag in tags:
-        activate_idxs = find_all_occurrences(tagged_text, f"[{tag}]")
+        activate_idxs = find_all_occurrences(tagged_text, OPENING_TAG.format(tag))
         for idx in activate_idxs:
             tag_start_end_locs[idx] = (tag, "activate")
 
-        deactivate_idxs = find_all_occurrences(tagged_text, f"[{tag}/]")
+        deactivate_idxs = find_all_occurrences(tagged_text, CLOSING_TAG.format(tag))
         for idx in deactivate_idxs:
             tag_start_end_locs[idx] = (tag, "deactivate")
 
