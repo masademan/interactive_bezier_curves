@@ -6,6 +6,7 @@ from tkinter import messagebox
 from fractions import Fraction
 from typing import Callable, Literal
 from bezier_curve import get_bezier_curve_points
+from interactive_control_point_pos import show_control_point_pos_in_window
 
 """
 TODO:
@@ -85,6 +86,17 @@ def coord_in_list(coord_to_find: np.ndarray, all_coords: list[np.ndarray]) -> bo
             return True
 
     return False
+
+
+def create_popup_window_toplevel(root: tk.Tk, title: str, quit_func: Callable) -> tk.Toplevel:
+    popup_window = tk.Toplevel(root)
+    popup_window.title(title)
+    popup_window.protocol("WM_DELETE_WINDOW", quit_func)
+
+    popup_window.bind("<Control-w>", quit_func)
+    popup_window.bind("<Escape>", quit_func)
+
+    return popup_window
 
 
 class MoveablePointInfo:
@@ -849,8 +861,6 @@ class BezierGUI:
         self.draw_bezier_curve()
         self.draw_control_points()
 
-        # self.draw_test() # TODO: Remove later
-
     def draw_grid(self, _event=None) -> None:
         self.canvas.delete("grid_line")
 
@@ -991,21 +1001,6 @@ class BezierGUI:
                     tags="bezier_curve",
                 )
 
-    def draw_test(self):  # TODO: Remove later
-        self.canvas.delete("test")
-
-        xy_range = self.get_int_coord_limits(self.grid_cell_size // 2)
-        # xy_range = self.get_graph_coord_limits()
-
-        for i in [0, 1]:
-            for j in [0, 1]:
-                draw_circle(
-                    self.canvas,
-                    *self.coord_to_canvas((xy_range[0][i], xy_range[1][j])),
-                    radius=self.control_point_radius,
-                    tags="test",
-                )
-
     def open_control_point_pos_list(self) -> None:  # TODO
         messagebox.showinfo(
             "Feature coming soon",
@@ -1014,9 +1009,18 @@ class BezierGUI:
                 I still need to write out all the docs
             """,
         )
+        
+        # self.control_point_pos_window = create_popup_window_toplevel(
+        #     self.root,
+        #     "Control point positions",
+        #     self.quit,
+        # )
 
-        # Similar code as the help guide
-        # self.control_point_pos_window
+        # show_control_point_pos_in_window(
+        #     self.control_point_pos_window,
+        #     self.control_points,
+        #     ("Arial", 11),
+        # )
 
     def open_help_guide(self) -> None:  # TODO
         messagebox.showinfo(
