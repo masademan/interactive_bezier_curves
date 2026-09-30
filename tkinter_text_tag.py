@@ -60,8 +60,22 @@ def tkinter_text_tag_formatter(
     tagged_text: str,
     formatting_tags: dict[str, dict[str, str | tuple | int]] = {},
     text_codes: dict[str, str] = {},
-    show_warnings_only_in_window: bool = True,
+    do_formatting: bool = True,
+    replace_text_codes: bool = True,
+    show_errors_in_window: bool = True,
+    crash_on_error: bool = True,
+    show_warnings_in_window: bool = True,
 ) -> None:
+    """
+    Given a tk.Text object and some text, this will use tags to format the text given the formatting_tags dict\n
+    Text codes can also be specified that get replaced with another string during rendering\n
+    do_formatting can enable/disable formatting, which is good for testing\n
+    replace_text_codes can also be enabled/disabled for the same reason\n
+    show_errors_in_window and show_warnings_in_window both control whether or not tag errors/warnings get shown in a pop up window\n
+    crash_on_error will make the program crash when it hits a tag error if true, and if false,
+        it'll just write all the text without formatting\n
+    """
+
     text_area_state = text_area.cget("state")
     text_area.config(state="normal")
 
@@ -69,39 +83,67 @@ def tkinter_text_tag_formatter(
 
     tag_start_end_locs = {}
     formatting_error_tags = []
-    for tag in formatting_tags:
-        activate_idxs = find_all_occurrences(tagged_text, OPENING_TAG.format(tag))
-        for idx in activate_idxs:
-            tag_start_end_locs[idx] = (tag, "activate")
 
-        deactivate_idxs = find_all_occurrences(tagged_text, CLOSING_TAG.format(tag))
-        for idx in deactivate_idxs:
-            tag_start_end_locs[idx] = (tag, "deactivate")
+    if do_formatting:
+        for tag in formatting_tags:
+            activate_idxs = find_all_occurrences(tagged_text, OPENING_TAG.format(tag))
+            for idx in activate_idxs:
+                tag_start_end_locs[idx] = (tag, "activate")
 
-        if len(activate_idxs) > len(deactivate_idxs):
-            num_missing = len(activate_idxs) - len(deactivate_idxs)
-            formatting_error_tags.append(
-                f'There {"is" if num_missing == 1 else "are"} {num_missing} closing "{tag}" tags that are missing'
-            )
-        if len(activate_idxs) < len(deactivate_idxs):
-            num_missing = len(deactivate_idxs) - len(activate_idxs)
-            formatting_error_tags.append(
-                f'There {"is" if num_missing == 1 else "are"} {num_missing} opening "{tag}" tags that are missing'
-            )
+            deactivate_idxs = find_all_occurrences(tagged_text, CLOSING_TAG.format(tag))
+            for idx in deactivate_idxs:
+                tag_start_end_locs[idx] = (tag, "deactivate")
+
+            if len(activate_idxs) > len(deactivate_idxs):
+                num_missing = len(activate_idxs) - len(deactivate_idxs)
+                formatting_error_tags.append(
+                    f'There {"is" if num_missing == 1 else "are"} {num_missing} closing "{tag}" tags that are missing'
+                )
+            if len(activate_idxs) < len(deactivate_idxs):
+                num_missing = len(deactivate_idxs) - len(activate_idxs)
+                formatting_error_tags.append(
+                    f'There {"is" if num_missing == 1 else "are"} {num_missing} opening "{tag}" tags that are missing'
+                )
 
     text_code_locs = {}
-    for text_code in text_codes:
-        all_idxs = find_all_occurrences(tagged_text, TEXT_CODE.format(text_code))
-        for idx in all_idxs:
-            text_code_locs[idx] = text_code
+
+    if replace_text_codes:
+        for text_code in text_codes:
+            all_idxs = find_all_occurrences(tagged_text, TEXT_CODE.format(text_code))
+            for idx in all_idxs:
+                text_code_locs[idx] = text_code
 
     if formatting_error_tags:
-        print("Formatting errors:", file=sys.stderr)
+        error_lines = ["Formatting errors:"]
 
         for error in formatting_error_tags:
-            print(f" - {error}", file=sys.stderr)
+            error_lines.append(f" - {error}")
 
-        sys.exit(-1)
+        if show_errors_in_window:
+            messagebox.showwarning(
+                "TAG ERRORS",
+                "\n".join(
+                    error_lines
+                    + [
+                        "",
+                        "If you are seeing this error and you aren't a developer, then",
+                        "contact the maintainer of this project to get the bug fixed",
+                    ]
+                ),
+            )
+
+        print("\n".join(error_lines), file=sys.stderr)
+
+        if crash_on_error:
+            sys.exit(-1)
+        else:
+            text_area.config(state=text_area_state)
+            tkinter_text_tag_formatter(
+                text_area,
+                tagged_text,
+                text_codes=text_codes
+            )
+            return
 
     for tag, tag_config in formatting_tags.items():
         text_area.tag_config(tag, **tag_config)
@@ -139,7 +181,7 @@ def tkinter_text_tag_formatter(
             idx += 1
 
     if len(tag_warnings) > 1:
-        if show_warnings_only_in_window:
+        if show_warnings_in_window:
             messagebox.showwarning(
                 "TAG WARNING",
                 "\n".join(
