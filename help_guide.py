@@ -22,3 +22,11 @@ tags = {
 
 if __name__ == "__main__":
     pass
+
+
+"""
+Write the help guides
+    Make a window to make writing the guides easier
+    Make a tk.Text that you can edit, with a toplevel including some controls,
+      like a checkbox to show formatting or not, and a way to save the text writting in a .txt
+"""

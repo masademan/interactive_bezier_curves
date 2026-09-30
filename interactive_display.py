@@ -347,7 +347,7 @@ class BezierGUI:
             self.right_control_point_settings_frame,
             "Num control points",
             2,
-            10,
+            20,
             font_size=11,
             command=self.set_num_control_points,
         )
