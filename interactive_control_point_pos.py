@@ -2,27 +2,6 @@ import numpy as np
 import tkinter as tk
 from tkinter_text_tag import tkinter_text_tag_formatter
 
-TAB = "    "
-
-
-def setup_control_point_pos_window(window: tk.Tk | tk.Toplevel, font: tuple[str, int] = ("Arial", 11)) -> tk.Text:
-    scrollbar = tk.Scrollbar(window)
-    scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-
-    text_area = tk.Text(
-        window,
-        font=font,
-        wrap=tk.WORD,
-        yscrollcommand=scrollbar.set,
-        padx=10,
-        pady=10,
-    )
-    text_area.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-    scrollbar.config(command=text_area.yview)
-    text_area.config(state="disabled")
-
-    return text_area
-
 
 def show_control_point_pos_in_window(text_area: tk.Text, control_points: list[np.ndarray]) -> None:
     # Where the control point positions are turned into a string representation
@@ -43,11 +22,11 @@ def show_control_point_pos_in_window(text_area: tk.Text, control_points: list[np
     text_lines.append("[")
 
     for point in control_points:
-        text_lines.append(f"{TAB}({point[0]:.2f}, {point[1]:.2f}),")
+        text_lines.append(f"[/TAB]({point[0]:.2f}, {point[1]:.2f}),")
 
     text_lines.append("]")
 
-    tags = {
+    formatting_tags = {
         "SUBSCRIPT": {
             "font": ("Arial", 8),
             "offset": -3,
@@ -57,10 +36,4 @@ def show_control_point_pos_in_window(text_area: tk.Text, control_points: list[np
         },
     }
 
-    tkinter_text_tag_formatter(text_area, "\n".join(text_lines), tags)
-
-
-if __name__ == "__main__":
-    root = tk.Tk()
-    setup_control_point_pos_window(root, [])
-    root.mainloop()
+    tkinter_text_tag_formatter(text_area, "\n".join(text_lines), formatting_tags, show_warnings_only_in_window=True)

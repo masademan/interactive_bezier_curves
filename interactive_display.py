@@ -5,11 +5,15 @@ from tkinter.font import Font
 from tkinter import messagebox
 from fractions import Fraction
 from typing import Callable, Literal
+from help_guide import HELP_SECTIONS
 from tkinter_text_tag import clear_text_area
 from bezier_curve import get_bezier_curve_points
-from interactive_control_point_pos import (
-    setup_control_point_pos_window,
-    show_control_point_pos_in_window,
+from interactive_help_menu import show_help_guide_in_window
+from interactive_control_point_pos import show_control_point_pos_in_window
+from text_popup_window import (
+    setup_text_popup_window,
+    create_popup_window_toplevel,
+    add_buttons_to_text_popup_window,
 )
 
 """
@@ -91,17 +95,6 @@ def coord_in_list(coord_to_find: np.ndarray, all_coords: list[np.ndarray]) -> bo
     return False
 
 
-def create_popup_window_toplevel(root: tk.Tk, title: str, quit_func: Callable) -> tk.Toplevel:
-    popup_window = tk.Toplevel(root)
-    popup_window.title(title)
-    popup_window.protocol("WM_DELETE_WINDOW", quit_func)
-
-    popup_window.bind("<Control-w>", quit_func)
-    popup_window.bind("<Escape>", quit_func)
-
-    return popup_window
-
-
 class MoveablePointInfo:
     def __init__(self):
         self.mode: Literal["drag", "select", None] = None
@@ -168,6 +161,8 @@ class BezierGUI:
 
         # Help window
         self.help_window = None
+        self.help_text_area = None
+        self.current_help_guide = None
 
         # Control point pos
         self.control_point_pos_window = None
@@ -380,7 +375,7 @@ class BezierGUI:
         )
         self.control_point_radius_var.set(self.control_point_radius)
 
-        #   Button to show all control point pos TODO
+        #   Button to show all control point pos
         self.control_point_position_list_button = tk.Button(
             self.right_control_point_settings_frame,
             text="Show all control\npoint positions",
@@ -481,19 +476,9 @@ class BezierGUI:
         ).pack(padx=5, pady=5)
 
         #   Help selection
-        help_sections = [
-            "Quick start",
-            "Help guides",
-            "Grid settings",
-            "Control point settings",
-            "Bezier curve settings",
-            "Controls",
-            "Shortcuts",
-            "Usage",
-        ]
         self.help_selection = tk.StringVar()
-        self.help_selection.set(help_sections[0])
-        self.help_dropdown = tk.OptionMenu(self.help_frame, self.help_selection, *help_sections)
+        self.help_selection.set(HELP_SECTIONS[0])
+        self.help_dropdown = tk.OptionMenu(self.help_frame, self.help_selection, *HELP_SECTIONS)
         self.help_dropdown.pack(fill=tk.X, padx=5, pady=5)
 
         #   Help open button
@@ -626,7 +611,7 @@ class BezierGUI:
     def get_point_hovered_over(self, mouse_coord: tuple[float, float] | np.ndarray) -> int:
         if not self.show_control_points_var.get():
             return -1
-        
+
         point_idx = -1
         smallest_dist = float("inf")
 
@@ -967,7 +952,7 @@ class BezierGUI:
                 fill=fill_color,
                 tags="control_points",
             )
-        
+
         if self.control_point_text_area is not None:
             clear_text_area(self.control_point_text_area)
             show_control_point_pos_in_window(self.control_point_text_area, self.control_points)
@@ -1030,68 +1015,85 @@ class BezierGUI:
             self.quit,
         )
 
-        self.control_point_text_area = setup_control_point_pos_window(self.control_point_pos_window)
-        
+        self.control_point_text_area = setup_text_popup_window(self.control_point_pos_window)
+
         clear_text_area(self.control_point_text_area)
         show_control_point_pos_in_window(self.control_point_text_area, self.control_points)
 
-    def open_help_guide(self) -> None:  # TODO
-        messagebox.showinfo(
-            "Feature coming soon",
-            """
-                This feature will come soon
-                I still need to write out all the docs
-            """,
+    def open_help_guide(self) -> None:
+        if self.help_window != None:
+            if self.current_help_guide == self.help_selection.get():
+                messagebox.showinfo(
+                    "Help guide",
+                    f"A window showing the help guide for '{self.current_help_guide}' is already open",
+                )
+                self.help_window.deiconify()
+                self.help_window.lift()
+                self.help_window.focus_force()
+                return
+
+            self.help_window.destroy()
+            self.help_text_area = None
+            self.current_help_guide = None
+
+        self.current_help_guide = self.help_selection.get()
+
+        self.help_window = create_popup_window_toplevel(
+            self.root,
+            f"Help guide: {self.current_help_guide}",
+            self.quit,
         )
 
-        # # New window + scolling text test
-        # self.help_window = tk.Toplevel(self.root)
-        # self.help_window.title("Test msg")
-        # self.help_window.protocol("WM_DELETE_WINDOW", self.quit)
-        # # new_window.geometry("300x200")
+        self.help_text_area = setup_text_popup_window(self.help_window)
 
-        # scrollbar = tk.Scrollbar(self.help_window)
-        # scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-
-        # text_area = tk.Text(self.help_window, font=("Arial", 11), wrap=tk.WORD, yscrollcommand=scrollbar.set)
-        # text_area.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        # scrollbar.config(command=text_area.yview)
-
-        # text_area.insert(tk.END,
-        # """
-        #     Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras tincidunt risus in hendrerit gravida. Suspendisse vitae mi id nulla facilisis pretium at vel enim. Curabitur mattis urna sed elementum molestie.
-        #     Interdum et malesuada fames ac ante ipsum primis in faucibus. Vestibulum id libero a orci cursus accumsan et in neque. Nulla in mauris quam. Fusce fermentum pharetra lectus, id tincidunt risus dictum eget.
-        #     Proin tempus tincidunt scelerisque. Sed gravida tortor efficitur tortor tincidunt, eu faucibus nulla facilisis. Suspendisse eu nulla et leo efficitur porttitor ac varius quam. Mauris a sagittis quam.
-        #     Quisque vitae quam vestibulum, facilisis justo et, blandit enim. Aliquam erat volutpat. Nulla semper, arcu ut imperdiet consectetur, urna dui tempor urna, eget mattis leo nisl eu turpis.
-        #     Quisque in odio eu urna mattis elementum mattis ac magna.
-
-        #     Curabitur efficitur nisl non laoreet luctus. Maecenas suscipit eros neque, non sagittis leo blandit vel. Etiam nec dolor ac lacus auctor consequat id nec felis.
-        #     Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Aenean vel nibh quis urna faucibus scelerisque. Proin quam eros, pulvinar a tristique eget, posuere et urna.
-        #     Nulla a nisi et ligula ultricies auctor et nec augue. Donec in urna non enim interdum iaculis. Donec fringilla maximus pellentesque. Maecenas semper aliquam orci eu varius.
-        #     Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Phasellus facilisis venenatis eleifend. Pellentesque purus nisi, bibendum ac libero ac, consequat imperdiet quam.
-        #     Pellentesque leo tellus, sodales at erat in, elementum ultrices velit. Integer non feugiat ex, egestas interdum ex. Nunc quam tellus, commodo sed tellus quis, aliquam faucibus sem.
-
-        #     Nunc feugiat, velit non mollis imperdiet, tortor nunc malesuada lectus, eget porttitor lorem massa id turpis. Cras convallis libero nec urna venenatis, non malesuada ligula porttitor.
-        #     Curabitur a tellus ac ex tempus porttitor sed in ipsum. Praesent tempus risus non tellus suscipit venenatis eu mattis nulla. Praesent sem est, pretium quis tempus ac, molestie id purus.
-        #     Nunc rutrum tortor arcu, sit amet tincidunt nisl tincidunt vel. Cras malesuada malesuada pretium. Curabitur ut lacus metus. Integer erat felis, luctus a pulvinar et, egestas quis neque.
-        #     Duis venenatis, felis nec volutpat tincidunt, augue purus dignissim turpis, at bibendum risus mi eget elit. Nam vel tellus sit amet arcu tempor interdum non faucibus ante. Sed in magna at ex vulputate maximus ut a nisi.
-        #     Suspendisse aliquam enim vitae massa bibendum sollicitudin. Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-
-        #     Morbi iaculis ex scelerisque lacus dapibus posuere. Sed malesuada rutrum placerat. Vivamus lobortis ut sem a fermentum. Nulla tempus hendrerit ex in accumsan. Integer augue sapien, eleifend non nibh a, convallis iaculis est.
-        #     Integer orci nisi, volutpat eleifend arcu egestas, volutpat condimentum sem. Morbi a orci facilisis, euismod purus ullamcorper, feugiat est. Maecenas accumsan magna sit amet odio efficitur finibus.
-        #     Sed vel tellus pretium, venenatis ligula eu, scelerisque libero. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Ut nec aliquam velit, id commodo purus.
-        #     Cras pretium lorem et laoreet convallis.
-
-        #     Morbi malesuada quis mi non varius. Nulla commodo maximus lobortis. Curabitur in ex ut lorem maximus hendrerit. Duis id dolor lacus. Ut venenatis sodales nibh eu finibus. Aliquam erat volutpat.
-        #     Sed placerat eros at gravida porttitor. Nunc nisi tortor, rhoncus a est in, ullamcorper semper lectus. Donec gravida, tortor id accumsan venenatis, arcu leo accumsan elit, nec ornare enim ipsum ac diam.
-        #     In pellentesque quam odio, ac faucibus ex mattis sed. Mauris tellus orci, tristique nec arcu in, elementum sollicitudin dui. Aliquam eu est non magna suscipit varius a eu tellus. Quisque venenatis porta metus, quis laoreet ligula.
-        #     Duis porta lectus quis commodo congue.
-        # """
-        # )
-
-        # text_area.config(state="disabled")
-
-        # print(f"Guide opened: {self.help_selection.get()}")
+        clear_text_area(self.help_text_area)
+        show_help_guide_in_window(self.help_text_area, self.current_help_guide)
+        
+        help_guide_idx = HELP_SECTIONS.index(self.current_help_guide)
+        buttons_to_add = []
+        if help_guide_idx == 0:
+            buttons_to_add.append((f"Next guide: {HELP_SECTIONS[help_guide_idx + 1]} >", self.next_help_guide, "right"))
+        elif help_guide_idx == len(HELP_SECTIONS) - 1:
+            buttons_to_add.append((f"< Prev guide: {HELP_SECTIONS[help_guide_idx - 1]}", self.prev_help_guide))
+        else:
+            buttons_to_add.append((f"< Prev guide: {HELP_SECTIONS[help_guide_idx - 1]}", self.prev_help_guide))
+            buttons_to_add.append((f"Next guide: {HELP_SECTIONS[help_guide_idx + 1]} >", self.next_help_guide))
+        
+        add_buttons_to_text_popup_window(*buttons_to_add, text_area=self.help_text_area, button_to_text_spacing="\n")
+        
+    def next_help_guide(self) -> None:
+        if self.current_help_guide == None:
+            messagebox.showerror(
+                "Help guide error",
+                "There has been a variable unsync. Close and reopen the program and try again.\n" \
+                "If the issue persists, contact the maintainer to fix the bug.",
+            )
+            return
+        
+        help_guide_idx = HELP_SECTIONS.index(self.current_help_guide)
+        if help_guide_idx == len(HELP_SECTIONS) - 1:
+            return
+        
+        self.help_selection.set(HELP_SECTIONS[help_guide_idx + 1])
+        
+        self.open_help_guide()
+    
+    def prev_help_guide(self) -> None:
+        if self.current_help_guide == None:
+            messagebox.showerror(
+                "Help guide error",
+                "There has been a variable unsync. Close and reopen the program and try again.\n" \
+                "If the issue persists, contact the maintainer to fix the bug.",
+            )
+            return
+        
+        help_guide_idx = HELP_SECTIONS.index(self.current_help_guide)
+        if help_guide_idx == 0:
+            return
+        
+        self.help_selection.set(HELP_SECTIONS[help_guide_idx - 1])
+        
+        self.open_help_guide()
 
     def resize(self, _event=None) -> None:
         self.draw()
@@ -1168,6 +1170,8 @@ class BezierGUI:
         if self.help_window is not None:
             self.help_window.destroy()
             self.help_window = None
+            self.help_text_area = None
+            self.current_help_guide = None
         elif self.control_point_pos_window is not None:
             self.control_point_pos_window.destroy()
             self.control_point_pos_window = None

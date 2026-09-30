@@ -9,7 +9,12 @@ OPENING_TAG = "[{}]"
 CLOSING_TAG = "[{}/]"
 
 # tags have to be initialized in the form "tags = {[TAG]: {[CONFIG_NAME]: [CONFIG]}}"
-# Ex. 'tags = {"SUBSCRIPT": {"font": ("Arial", 8), "offset": -4}, "RED": {"foreground": "red"}}'
+# Ex. 'formatting_tags = {"SUBSCRIPT": {"font": ("Arial", 8), "offset": -4}, "RED": {"foreground": "red"}}'
+
+# Special text codes can also be added, like a tab code
+# These codes would be in the form "[/CODE_NAME]", and can be setup in a similar way
+#   as the formatting tags
+# Ex. 'text_codes = {"TAB": "   ", "COORD": "(x, y)"}'
 
 
 def find_all_occurrences(full_str: str, substring: str) -> list[int]:
@@ -44,15 +49,20 @@ def clear_text_area(text_area: tk.Text) -> None:
     text_area.config(state=text_area_state)
 
 
-def tkinter_text_tag_formatter(text_area: tk.Text, tagged_text: str, tags: dict[str, dict[str, str | tuple | int]], show_warnings_in_window: bool = False) -> None:
+def tkinter_text_tag_formatter(
+    text_area: tk.Text,
+    tagged_text: str,
+    formatting_tags: dict[str, dict[str, str | tuple | int]],
+    show_warnings_only_in_window: bool = True,
+) -> None:
     text_area_state = text_area.cget("state")
     text_area.config(state="normal")
 
-    tag_states = {tag: 0 for tag in tags}  # 0 means inactive, 1 means active
+    tag_states = {tag: 0 for tag in formatting_tags}  # 0 means inactive, 1 means active
 
     tag_start_end_locs = {}
     formatting_error_tags = []
-    for tag in tags:
+    for tag in formatting_tags:
         activate_idxs = find_all_occurrences(tagged_text, OPENING_TAG.format(tag))
         for idx in activate_idxs:
             tag_start_end_locs[idx] = (tag, "activate")
@@ -80,7 +90,7 @@ def tkinter_text_tag_formatter(text_area: tk.Text, tagged_text: str, tags: dict[
 
         sys.exit(-1)
 
-    for tag, tag_config in tags.items():
+    for tag, tag_config in formatting_tags.items():
         text_area.tag_config(tag, **tag_config)
 
     tag_warnings = ["WARNING: These mismatched tags could lead to unexpected consequences"]
@@ -90,7 +100,7 @@ def tkinter_text_tag_formatter(text_area: tk.Text, tagged_text: str, tags: dict[
     txt_buffer = []
     while idx < len(tagged_text):
         if idx in tag_start_end_locs:
-            text_area.insert(tk.END, "".join(txt_buffer), [tag for tag in tags if tag_states[tag] == 1])
+            text_area.insert(tk.END, "".join(txt_buffer), [tag for tag in formatting_tags if tag_states[tag] == 1])
             txt_buffer = []
             current_tag = tag_start_end_locs[idx][0]
 
@@ -105,21 +115,28 @@ def tkinter_text_tag_formatter(text_area: tk.Text, tagged_text: str, tags: dict[
                 last_open_tag = tag_stack.pop()
                 if last_open_tag != current_tag:
                     tag_warnings.append(
-                        f" - The last opening tag was '[{last_open_tag}]', but the current closing tag is '[{current_tag}/]'"
+                        f" - The last opening tag was '[{last_open_tag}]',\n     but the current closing tag is '[{current_tag}/]'"
                     )
         else:
             txt_buffer.append(tagged_text[idx])
             idx += 1
 
     if len(tag_warnings) > 1:
-        if show_warnings_in_window:
+        if show_warnings_only_in_window:
             messagebox.showwarning(
                 "TAG WARNING",
-                "\n".join(tag_warnings),
+                "\n".join(
+                    tag_warnings
+                    + [
+                        "",
+                        "If you are seeing this error and you aren't a developer, then",
+                        "contact the maintainer of this project to get the bug fixed",
+                    ]
+                ),
             )
-        else:
-            print("\n".join(tag_warnings), file=sys.stderr)
 
-    text_area.insert(tk.END, "".join(txt_buffer), [tag for tag in tags if tag_states[tag] == 1])
+        print("\n".join(tag_warnings), file=sys.stderr)
+
+    text_area.insert(tk.END, "".join(txt_buffer), [tag for tag in formatting_tags if tag_states[tag] == 1])
 
     text_area.config(state=text_area_state)
