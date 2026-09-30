@@ -1,5 +1,3 @@
-from text_popup_window import TAB
-
 HELP_SECTIONS = [
     "Quick start",
     "Help guides",

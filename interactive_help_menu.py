@@ -1,5 +1,4 @@
 import tkinter as tk
-from text_popup_window import TAB
 from tkinter_text_tag import tkinter_text_tag_formatter
 
 

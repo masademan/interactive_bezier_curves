@@ -1,8 +1,6 @@
 import tkinter as tk
 from typing import Callable
 
-TAB = "    "
-
 
 def create_popup_window_toplevel(root: tk.Tk, title: str, quit_func: Callable, offset: float = 60) -> tk.Toplevel:
     popup_window = tk.Toplevel(root)

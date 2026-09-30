@@ -8,12 +8,18 @@ from tkinter import messagebox
 OPENING_TAG = "[{}]"
 CLOSING_TAG = "[{}/]"
 
-# tags have to be initialized in the form "tags = {[TAG]: {[CONFIG_NAME]: [CONFIG]}}"
+# tags have to be initialized in the form "formatting_tags = {[TAG]: {[CONFIG_NAME]: [CONFIG]}}"
 # Ex. 'formatting_tags = {"SUBSCRIPT": {"font": ("Arial", 8), "offset": -4}, "RED": {"foreground": "red"}}'
+
 
 # Special text codes can also be added, like a tab code
 # These codes would be in the form "[/CODE_NAME]", and can be setup in a similar way
 #   as the formatting tags
+# Just like the formatting codes, the text code can also be customized
+# Do make sure that the codes are in a form that you can't type by accident in your normal text
+TEXT_CODE = "[/{}]"
+
+# codes have to be initialized in the form "text_codes = {[CODE_NAME]: "[TEXT_THAT_REPLACES_THE_CODE]"}"
 # Ex. 'text_codes = {"TAB": "   ", "COORD": "(x, y)"}'
 
 
@@ -52,7 +58,8 @@ def clear_text_area(text_area: tk.Text) -> None:
 def tkinter_text_tag_formatter(
     text_area: tk.Text,
     tagged_text: str,
-    formatting_tags: dict[str, dict[str, str | tuple | int]],
+    formatting_tags: dict[str, dict[str, str | tuple | int]] = {},
+    text_codes: dict[str, str] = {},
     show_warnings_only_in_window: bool = True,
 ) -> None:
     text_area_state = text_area.cget("state")
@@ -82,6 +89,12 @@ def tkinter_text_tag_formatter(
                 f'There {"is" if num_missing == 1 else "are"} {num_missing} opening "{tag}" tags that are missing'
             )
 
+    text_code_locs = {}
+    for text_code in text_codes:
+        all_idxs = find_all_occurrences(tagged_text, TEXT_CODE.format(text_code))
+        for idx in all_idxs:
+            text_code_locs[idx] = text_code
+
     if formatting_error_tags:
         print("Formatting errors:", file=sys.stderr)
 
@@ -106,17 +119,21 @@ def tkinter_text_tag_formatter(
 
             if tag_start_end_locs[idx][1] == "activate":
                 tag_states[current_tag] = 1
-                idx += 2 + len(current_tag)
+                idx += (len(OPENING_TAG) - 2) + len(current_tag)
                 tag_stack.append(current_tag)
             else:
                 tag_states[current_tag] = 0
-                idx += 3 + len(current_tag)
+                idx += (len(CLOSING_TAG) - 2) + len(current_tag)
 
                 last_open_tag = tag_stack.pop()
                 if last_open_tag != current_tag:
                     tag_warnings.append(
                         f" - The last opening tag was '[{last_open_tag}]',\n     but the current closing tag is '[{current_tag}/]'"
                     )
+        elif idx in text_code_locs:
+            current_text_code = text_code_locs[idx]
+            txt_buffer.append(text_codes[current_text_code])
+            idx += (len(TEXT_CODE) - 2) + len(current_text_code)
         else:
             txt_buffer.append(tagged_text[idx])
             idx += 1

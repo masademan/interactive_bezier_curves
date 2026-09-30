@@ -36,4 +36,14 @@ def show_control_point_pos_in_window(text_area: tk.Text, control_points: list[np
         },
     }
 
-    tkinter_text_tag_formatter(text_area, "\n".join(text_lines), formatting_tags, show_warnings_only_in_window=True)
+    text_codes = {
+        "TAB": "    "
+    }
+
+    tkinter_text_tag_formatter(
+        text_area,
+        "\n".join(text_lines),
+        formatting_tags=formatting_tags,
+        text_codes=text_codes,
+        show_warnings_only_in_window=True,
+    )
