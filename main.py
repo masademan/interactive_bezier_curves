@@ -1,5 +1,0 @@
-from interactive_display import BezierGUI
-
-if __name__ == "__main__":
-    bezier_gui = BezierGUI()
-    bezier_gui.run_gui()
