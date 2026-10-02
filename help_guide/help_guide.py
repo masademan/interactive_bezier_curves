@@ -3,6 +3,7 @@ HELP_SECTIONS = [
     "Help guides",
     "Grid settings",
     "Control point settings",
+    "Control point position window",
     "Bezier curve settings",
     "Controls",
     "Shortcuts",

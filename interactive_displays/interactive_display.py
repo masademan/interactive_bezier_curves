@@ -13,6 +13,7 @@ from interactive_displays.interactive_control_point_pos import show_control_poin
 from interactive_displays.text_popup_window import (
     setup_text_popup_window,
     create_popup_window_toplevel,
+    set_max_window_size_with_text,
     add_buttons_to_text_popup_window,
 )
 
@@ -149,7 +150,7 @@ class BezierGUI:
         self.root.minsize(1320, 1015)
 
         self.root.bind("<Control-w>", self.quit)
-        self.root.bind("<Control-W>", lambda _event: self.root.destroy())
+        self.root.bind("<Control-W>", self.full_quit)
         self.root.bind("<Escape>", self.quit)
 
         self.root.bind("<Up>", lambda _event: self.move_point_in_dir("<Up>"))
@@ -1013,12 +1014,15 @@ class BezierGUI:
             self.root,
             "Control point positions",
             self.quit,
+            full_quit_func=self.full_quit,
         )
 
         self.control_point_text_area = setup_text_popup_window(self.control_point_pos_window)
 
         clear_text_area(self.control_point_text_area)
         show_control_point_pos_in_window(self.control_point_text_area, self.control_points)
+        
+        self.control_point_pos_window.focus_force()
 
     def open_help_guide(self) -> None:
         if self.help_window != None:
@@ -1042,6 +1046,7 @@ class BezierGUI:
             self.root,
             f"Help guide: {self.current_help_guide}",
             self.quit,
+            full_quit_func=self.full_quit,
         )
 
         self.help_text_area = setup_text_popup_window(self.help_window)
@@ -1060,6 +1065,10 @@ class BezierGUI:
             buttons_to_add.append((f"Next guide: {HELP_SECTIONS[help_guide_idx + 1]} >", self.next_help_guide))
         
         add_buttons_to_text_popup_window(*buttons_to_add, text_area=self.help_text_area, button_to_text_spacing="\n")
+        
+        set_max_window_size_with_text(self.help_window, self.help_text_area)
+        
+        self.help_window.focus_force()
         
     def next_help_guide(self) -> None:
         if self.current_help_guide == None:
@@ -1178,6 +1187,9 @@ class BezierGUI:
             self.control_point_text_area = None
         else:
             self.root.destroy()
+            
+    def full_quit(self, _event=None) -> None:
+        self.root.destroy()
 
 
 if __name__ == "__main__":

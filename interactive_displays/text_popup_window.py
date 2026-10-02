@@ -2,7 +2,14 @@ import tkinter as tk
 from typing import Callable
 
 
-def create_popup_window_toplevel(root: tk.Tk, title: str, quit_func: Callable, offset: float = 60, custom_geometry: str | None = None) -> tk.Toplevel:
+def create_popup_window_toplevel(
+    root: tk.Tk,
+    title: str,
+    quit_func: Callable,
+    offset: float = 60,
+    custom_geometry: str | None = None,
+    full_quit_func: Callable | None = None,
+) -> tk.Toplevel:
     popup_window = tk.Toplevel(root)
     popup_window.title(title)
     if not custom_geometry:
@@ -12,17 +19,20 @@ def create_popup_window_toplevel(root: tk.Tk, title: str, quit_func: Callable, o
     popup_window.protocol("WM_DELETE_WINDOW", quit_func)
 
     popup_window.bind("<Control-w>", quit_func)
+    if full_quit_func is not None:
+        popup_window.bind("<Control-W>", full_quit_func)
     popup_window.bind("<Escape>", quit_func)
 
     return popup_window
 
 
-def setup_text_popup_window(window: tk.Tk | tk.Toplevel, font: tuple[str, int] = ("Arial", 11)) -> tk.Text:
+def setup_text_popup_window(window: tk.Tk | tk.Toplevel | tk.Frame, font: tuple[str, int] = ("Arial", 11), undo: bool = False) -> tk.Text:
     scrollbar = tk.Scrollbar(window)
     scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
     text_area = tk.Text(
         window,
+        undo=undo,
         font=font,
         wrap=tk.WORD,
         yscrollcommand=scrollbar.set,
@@ -36,7 +46,7 @@ def setup_text_popup_window(window: tk.Tk | tk.Toplevel, font: tuple[str, int] =
     return text_area
 
 
-def resize_button_frame_in_popup_window(event: tk.Event, button_frame: tk.Frame, offset: float = 25, height: float = 40):
+def resize_frame_in_popup_window(event: tk.Event, button_frame: tk.Frame, offset: float = 25, height: float = 40):
     button_frame.config(width=event.width - offset, height=height)
 
 
@@ -75,8 +85,6 @@ def add_buttons_to_text_popup_window(
     text_area_state = text_area.cget("state")
     text_area.config(state="normal")
 
-    text_area.tag_config("window_center_align", justify="center")
-
     button_frame = tk.Frame(text_area, bg=text_area.cget("bg"))
     button_frame.pack_propagate(False)
 
@@ -106,17 +114,59 @@ def add_buttons_to_text_popup_window(
                 padx=4,
                 pady=2.5,
             ).pack(padx=5, side=tk.LEFT if len(current_button_data) < 3 else current_button_data[2])
-            
-    enable_widget_scrolling(button_frame, text_area)
-    for child in button_frame.winfo_children():
-        enable_widget_scrolling(child, text_area)
 
-    text_area.insert(tk.END, button_to_text_spacing)
-
-    text_area.bind("<Configure>", lambda event: resize_button_frame_in_popup_window(event, button_frame, 25, 40))
-
-    start_idx = text_area.index(tk.END)
-    text_area.window_create(tk.END, window=button_frame)
-    text_area.tag_add("window_center_align", start_idx, tk.END)
+    add_frame_to_text_popup_window(text_area, button_frame, button_to_text_spacing)
 
     text_area.config(state=text_area_state)
+
+
+def add_frame_to_text_popup_window(
+    text_area: tk.Text,
+    frame: tk.Frame,
+    beginning_spacing: str = "",
+    ending_spacing: str = "",
+    offset: float = 25,
+    height: float = 40,
+) -> None:
+    text_area_state = text_area.cget("state")
+    text_area.config(state="normal")
+
+    text_area.tag_config("window_center_align", justify="center")
+
+    enable_widget_scrolling(frame, text_area)
+    for child in frame.winfo_children():
+        enable_widget_scrolling(child, text_area)
+
+    text_area.insert(tk.END, beginning_spacing)
+
+    text_area.bind(
+        "<Configure>",
+        lambda event: resize_frame_in_popup_window(event, frame, offset, height),
+    )
+
+    start_idx = text_area.index(tk.END)
+    text_area.window_create(tk.END, window=frame)
+    text_area.tag_add("window_center_align", start_idx, tk.END)
+
+    text_area.insert(tk.END, ending_spacing)
+
+    text_area.config(state=text_area_state)
+
+
+def set_max_window_size_with_text(window: tk.Tk | tk.Toplevel, text_area: tk.Text, pixel_buffer: float = 20) -> None:
+    window.update()
+
+    try:
+        total_text_pixels = text_area.tk.call(
+            (text_area._w, "count", "-update", "-ypixels", "1.0", "end"),
+        )
+    except tk.TclError:
+        total_text_pixels = None
+
+    if total_text_pixels:
+        padding = int(text_area.cget("bd")) + int(text_area.cget("selectborderwidth"))
+        total_text_height = total_text_pixels + (2 * padding) + pixel_buffer
+
+        extra_window_height = window.winfo_height() - text_area.winfo_height()
+
+        window.maxsize(width=window.winfo_screenwidth(), height=total_text_height + extra_window_height)
