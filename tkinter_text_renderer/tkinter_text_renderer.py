@@ -55,6 +55,18 @@ def clear_text_area(text_area: tk.Text) -> None:
     text_area.config(state=text_area_state)
 
 
+def choose_what_to_return(
+    errors: list[str], warnings: list[str], return_errors: bool, return_warnings: bool
+) -> None | list[str] | tuple[list[str], list[str]]:
+    if return_errors and return_warnings:
+        return (errors, warnings)
+    if return_errors:
+        return errors
+    if return_warnings:
+        return warnings
+    return
+
+
 def tkinter_text_tag_formatter(
     text_area: tk.Text,
     tagged_text: str,
@@ -65,7 +77,9 @@ def tkinter_text_tag_formatter(
     show_errors_in_window: bool = True,
     crash_on_error: bool = True,
     show_warnings_in_window: bool = True,
-) -> None:
+    return_errors: bool = False,
+    return_warnings: bool = False,
+) -> None | list[str] | tuple[list[str], list[str]]:
     """
     Given a tk.Text object and some text, this will use tags to format the text given the formatting_tags dict\n
     Text codes can also be specified that get replaced with another string during rendering\n
@@ -138,12 +152,8 @@ def tkinter_text_tag_formatter(
             sys.exit(-1)
         else:
             text_area.config(state=text_area_state)
-            tkinter_text_tag_formatter(
-                text_area,
-                tagged_text,
-                text_codes=text_codes
-            )
-            return
+            warnings = tkinter_text_tag_formatter(text_area, tagged_text, text_codes=text_codes, return_warnings=True)
+            return choose_what_to_return(formatting_error_tags, warnings, return_errors, return_warnings)
 
     for tag, tag_config in formatting_tags.items():
         text_area.tag_config(tag, **tag_config)
@@ -199,3 +209,5 @@ def tkinter_text_tag_formatter(
     text_area.insert(tk.END, "".join(txt_buffer), [tag for tag in formatting_tags if tag_states[tag] == 1])
 
     text_area.config(state=text_area_state)
+
+    return choose_what_to_return(formatting_error_tags, tag_warnings, return_errors, return_warnings)

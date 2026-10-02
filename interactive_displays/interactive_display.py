@@ -4,6 +4,7 @@ import tkinter as tk
 from tkinter.font import Font
 from tkinter import messagebox
 from fractions import Fraction
+from utils.utils import run_funcs
 from typing import Callable, Literal
 from help_guide.help_guide import HELP_SECTIONS
 from tkinter_text_renderer.tkinter_text_renderer import clear_text_area
@@ -42,12 +43,6 @@ def isnumeric(num_str: str, is_float: bool = False) -> bool:
             return False
 
     return True
-
-
-def run_funcs(*funcs: Callable) -> None:
-    for func in funcs:
-        func()
-
 
 def create_number_input(
     frame: tk.Frame,
