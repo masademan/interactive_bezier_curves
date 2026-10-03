@@ -26,7 +26,9 @@ def create_popup_window_toplevel(
     return popup_window
 
 
-def setup_text_popup_window(window: tk.Tk | tk.Toplevel | tk.Frame, font: tuple[str, int] = ("Arial", 11), undo: bool = False) -> tk.Text:
+def setup_text_popup_window(
+    window: tk.Tk | tk.Toplevel | tk.Frame, font: tuple[str, int] = ("Arial", 11), undo: bool = False
+) -> tk.Text:
     scrollbar = tk.Scrollbar(window)
     scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
