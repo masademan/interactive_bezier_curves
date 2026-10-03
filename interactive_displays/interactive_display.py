@@ -18,11 +18,6 @@ from interactive_displays.text_popup_window import (
     add_buttons_to_text_popup_window,
 )
 
-"""
-TODO:
-Add help guide
-"""
-
 COORD_DECIMAL_ROUNDING = 2
 
 
@@ -43,6 +38,7 @@ def isnumeric(num_str: str, is_float: bool = False) -> bool:
             return False
 
     return True
+
 
 def create_number_input(
     frame: tk.Frame,
@@ -1016,7 +1012,7 @@ class BezierGUI:
 
         clear_text_area(self.control_point_text_area)
         show_control_point_pos_in_window(self.control_point_text_area, self.control_points)
-        
+
         self.control_point_pos_window.focus_force()
 
     def open_help_guide(self) -> None:
@@ -1048,7 +1044,7 @@ class BezierGUI:
 
         clear_text_area(self.help_text_area)
         show_help_guide_in_window(self.help_text_area, self.current_help_guide)
-        
+
         help_guide_idx = HELP_SECTIONS.index(self.current_help_guide)
         buttons_to_add = []
         if help_guide_idx == 0:
@@ -1058,45 +1054,45 @@ class BezierGUI:
         else:
             buttons_to_add.append((f"< Prev guide: {HELP_SECTIONS[help_guide_idx - 1]}", self.prev_help_guide))
             buttons_to_add.append((f"Next guide: {HELP_SECTIONS[help_guide_idx + 1]} >", self.next_help_guide))
-        
+
         add_buttons_to_text_popup_window(*buttons_to_add, text_area=self.help_text_area, button_to_text_spacing="\n")
-        
+
         set_max_window_size_with_text(self.help_window, self.help_text_area)
-        
+
         self.help_window.focus_force()
-        
+
     def next_help_guide(self) -> None:
         if self.current_help_guide == None:
             messagebox.showerror(
                 "Help guide error",
-                "There has been a variable unsync. Close and reopen the program and try again.\n" \
+                "There has been a variable unsync. Close and reopen the program and try again.\n"
                 "If the issue persists, contact the maintainer to fix the bug.",
             )
             return
-        
+
         help_guide_idx = HELP_SECTIONS.index(self.current_help_guide)
         if help_guide_idx == len(HELP_SECTIONS) - 1:
             return
-        
+
         self.help_selection.set(HELP_SECTIONS[help_guide_idx + 1])
-        
+
         self.open_help_guide()
-    
+
     def prev_help_guide(self) -> None:
         if self.current_help_guide == None:
             messagebox.showerror(
                 "Help guide error",
-                "There has been a variable unsync. Close and reopen the program and try again.\n" \
+                "There has been a variable unsync. Close and reopen the program and try again.\n"
                 "If the issue persists, contact the maintainer to fix the bug.",
             )
             return
-        
+
         help_guide_idx = HELP_SECTIONS.index(self.current_help_guide)
         if help_guide_idx == 0:
             return
-        
+
         self.help_selection.set(HELP_SECTIONS[help_guide_idx - 1])
-        
+
         self.open_help_guide()
 
     def resize(self, _event=None) -> None:
@@ -1182,7 +1178,7 @@ class BezierGUI:
             self.control_point_text_area = None
         else:
             self.root.destroy()
-            
+
     def full_quit(self, _event=None) -> None:
         self.root.destroy()
 

@@ -1,0 +1,36 @@
+GUIDE_CONTENT_OF_help_guide_for_help_guide_writer.txt:
+"""
+[/TAB][H1]Main guide writing area:[H1/]
+It has the title "Help guide writer" and this is where all the help guides are written, including this one right here!
+
+You can write text codes and text formatting tags here along with the text you want to show and edit.
+
+Formatting tags have an opening and closing tag to signify what text they're tagging. The opening tags are written in the form {OPENING_TAG.format("TAG_NAME_HERE")}, and the closing tags are written in the form {CLOSING_TAG.format("TAG_NAME_HERE")}. So for a "BOLD" tag, the opening and closing tags would be written like {OPENING_TAG.format("BOLD")} and {CLOSING_TAG.format("BOLD")}.
+
+Text codes are written in the form {TEXT_CODE.format("CODE_NAME_HERE")}, so for a "TAB" code, it would be written like {TEXT_CODE.format("TAB")}.
+
+
+[/TAB][H1]Formatting tag area:[H1/]
+It has the title "Help guide formatting" and this is where all the formatting tags are defined.
+
+[/TAB][H1]Text code area:[H1/]
+It has the title "Help guide codes" and this is where all the text codes are defined.
+
+[/TAB][H1]Guide preview area:[H1/]
+It has the title "Help guide preview" and this is where the preview of the formatting appears.
+
+[/TAB][H1]Shortcuts:[H1/]
+
+"""
+
+
+TAG_CONTENT_OF_help_guide_for_help_guide_writer.txt:
+"""
+
+"""
+
+
+CODE_CONTENT_OF_help_guide_for_help_guide_writer.txt:
+"""
+
+"""
