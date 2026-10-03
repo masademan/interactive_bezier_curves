@@ -1,0 +1,100 @@
+TEXT_CONTENT_OF_help_guide_for_text_writer.txt:
+"""
+[/TAB][H1]Main text writing area:[H1/]
+It has the title "Formatted text writer" and this is where all formatted text is written, including this text right here!
+
+You can write text codes and text formatting tags here along with the text you want to show and edit.
+
+Formatting tags have an opening and closing tag to signify what text they're tagging.
+The opening tags are written in the form {OPENING_TAG.format("TAG_NAME_HERE")}, and the closing tags are written in the form {CLOSING_TAG.format("TAG_NAME_HERE")}.
+So for a "BOLD" tag, the opening and closing tags would be written like {OPENING_TAG.format("BOLD")} and {CLOSING_TAG.format("BOLD")}, with the text you want bolded in between the opening and closing tags.
+
+Text codes are written in the form {TEXT_CODE.format("CODE_NAME_HERE")}, so for a "TAB" code, it would be written like {TEXT_CODE.format("TAB")}.
+
+
+[/TAB][H1]Formatting tag area:[H1/]
+[H2]Basics[H2/]
+It has the title "Formatted text formatting" and this is where all the formatting tags are defined.
+
+[H2]Formatting tag rules[H2/]
+
+[/TAB][H1]Text code area:[H1/]
+[H2]Basics[H2/]
+It has the title "Formatted text codes" and this is where all the text codes are defined.
+
+These should be written like writing variables in Python. It should be in this form:
+CODE_NAME = "[TEXT_HERE]"
+
+Where "CODE_NAME" is the name you want for that code (rules on naming later), and "[TEXT_HERE]" to be the text you want to the text codes
+
+The reason why text codes are useful are that you can make a code that's later editable, like a TAB code, that you can later adjust how much spacing it adds, or it can be used to shorten extremely repetitive text. Like, if you wanted to write "(x[TRUE_SUBSCRIPT]i[TRUE_SUBSCRIPT/], y[TRUE_SUBSCRIPT]i[TRUE_SUBSCRIPT/])", you'd have to constantly write:
+(x[SUBSCRIPT]i[SUBSCRIPT/], y[SUBSCRIPT]i[SUBSCRIPT/])
+Which is extremely hard to read and repetitive, so you can write a text code like:
+COORD_I = (x[SUBSCRIPT]i[SUBSCRIPT/], y[SUBSCRIPT]i[SUBSCRIPT/])
+
+So instead of writing the mess of text from earlier, you could just write "[/COORD_I]" to get "[/TRUE_COORD_I]"
+This makes writing formatted text much easier to read and navigate.
+
+[H2]Text code rules[H2/]
+It's not necessary, but it's recommended to make all the codes in all caps to make them distinct from normal text.
+Make sure there aren't any spaces in the text code name, this can lead to ambiguity in the text code name.
+Again, these text codes should be written like normal variables in Python.
+
+Once you write the text code name, you can have any number of spaces, an equals sign, any number of spaces, and then an opening single or double quote followed by your text and the accompanying closing quote.
+Again, like Python, if you want double quotes in the text code, you can use single quotes for the opening and closing quotes, and for single quotes in the text code, use double quotes.
+But also like in Python, you can use \\" or \\' to make sure that the quote is rendered properly and avoids bugs.
+
+Finally, if the text code is getting too long, you can make a break the string into 2 lines with a backslash.
+This doesn't add a newline character, and the code interpretes the string as unbroken. Again, spaces between the closing quote and backslash don't matter, like in regular Python.
+Example:
+LONG_THING = "This sentence is pretty long" \\
+", so let's break it into 2 lines"
+
+The code would interpret this as "This sentence is pretty long, so let's break it into 2 lines", again, with no newline characters added.
+
+Also like regular Python strings, you can also have escape codes, like your usual \\t, \\n, \\\\, etc.
+
+[/TAB][H1]Text preview area:[H1/]
+It has the title "Formatted text preview" and this is where the preview of the formatting appears.
+
+[/TAB][H1]Shortcuts:[H1/]
+[H2]Intro[H2/]
+Each sub-heading in this chapter will be the domain where the following shortcuts work. So a sub-heading that says "Formatted text writer", then the following shortcuts only work on the "Formatted text writer" window.
+
+[H2]All windows[H2/]
+
+[H2]Formatted text writer[H2/]
+
+[H2]Help guide[H2/]
+This is a window that only opens with the "Help" button in the "Formatted text writer" window
+
+[H2]Formatted text formatting[H2/]
+
+[H2]Formatted text codes[H2/]
+
+[H2]Formatted text preview[H2/]
+
+"""
+
+
+TAG_CONTENT_OF_help_guide_for_text_writer.txt:
+"""
+TRUE_SUBSCRIPT= {
+font: (Arial, 8),
+offset: -3,
+}
+
+BOLD = { font: (Arial, 11, bold) }
+
+H1 = { font: (Arial, 15, bold) }
+
+H2 = { font: (Arial, 13, bold) }
+"""
+
+
+CODE_CONTENT_OF_help_guide_for_text_writer.txt:
+"""
+TAB = "     "
+
+TRUE_COORD_I = "(x[SUBSCRIPT]i[SUBSCRIPT/], y[SUBSCRIPT]i[SUBSCRIPT/])"
+"""

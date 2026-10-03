@@ -22,6 +22,8 @@ TEXT_CODE = "[/{}]"
 # codes have to be initialized in the form "text_codes = {[CODE_NAME]: "[TEXT_THAT_REPLACES_THE_CODE]"}"
 # Ex. 'text_codes = {"TAB": "   ", "COORD": "(x, y)"}'
 
+# There can be formatting tags in the text codes, like '{"COORD_I": "(x[SUBSCRIPT]i[SUBSCRIPT/], y[SUBSCRIPT]i[SUBSCRIPT/])"}'
+
 
 def find_all_occurrences(full_str: str, substring: str) -> list[int]:
     """
@@ -56,20 +58,40 @@ def clear_text_area(text_area: tk.Text) -> None:
 
 
 def choose_what_to_return(
-    errors: list[str], warnings: list[str], return_errors: bool, return_warnings: bool
-) -> None | list[str] | tuple[list[str], list[str]]:
+    errors: list[str],
+    warnings: list[str],
+    formatted_text: str,
+    return_errors: bool,
+    return_warnings: bool,
+    return_formatted_text: bool = False,
+) -> None | str | list[str] | tuple[list[str], list[str]] | tuple[list[str], str] | tuple[list[str], list[str], str]:
+    if return_errors and return_warnings and return_formatted_text:
+        return (errors, warnings, formatted_text)
+    
+    if return_errors and return_formatted_text:
+        return (errors, return_formatted_text)
+    
     if return_errors and return_warnings:
-        return (errors, warnings)
+        return (errors, return_warnings)
+    
+    if return_warnings and return_formatted_text:
+        return (return_warnings, return_formatted_text)
+    
     if return_errors:
         return errors
+    
     if return_warnings:
         return warnings
+    
+    if return_formatted_text:
+        return formatted_text
+    
     return
 
 
 def tkinter_text_tag_formatter(
     text_area: tk.Text,
-    tagged_text: str,
+    tagged_and_coded_text: str,
     formatting_tags: dict[str, dict[str, str | tuple | int]] = {},
     text_codes: dict[str, str] = {},
     do_formatting: bool = True,
@@ -79,7 +101,8 @@ def tkinter_text_tag_formatter(
     show_warnings_in_window: bool = True,
     return_errors: bool = False,
     return_warnings: bool = False,
-) -> None | list[str] | tuple[list[str], list[str]]:
+    return_formatted_text: bool = False,
+) -> None | str | list[str] | tuple[list[str], list[str]] | tuple[list[str], str] | tuple[list[str], list[str], str]:
     """
     Given a tk.Text object and some text, this will use tags to format the text given the formatting_tags dict\n
     Text codes can also be specified that get replaced with another string during rendering\n
@@ -92,6 +115,27 @@ def tkinter_text_tag_formatter(
 
     text_area_state = text_area.cget("state")
     text_area.config(state="normal")
+
+    text_code_locs = {}
+
+    if replace_text_codes:
+        for text_code in text_codes:
+            all_idxs = find_all_occurrences(tagged_and_coded_text, TEXT_CODE.format(text_code))
+            for idx in all_idxs:
+                text_code_locs[idx] = text_code
+
+    idx = 0
+    txt_buffer = []
+    while idx < len(tagged_and_coded_text):
+        if idx in text_code_locs:
+            current_text_code = text_code_locs[idx]
+            txt_buffer.append(text_codes[current_text_code])
+            idx += (len(TEXT_CODE) - 2) + len(current_text_code)
+        else:
+            txt_buffer.append(tagged_and_coded_text[idx])
+            idx += 1
+
+    tagged_text = "".join(txt_buffer)
 
     tag_states = {tag: 0 for tag in formatting_tags}  # 0 means inactive, 1 means active
 
@@ -119,14 +163,6 @@ def tkinter_text_tag_formatter(
                     f'There {"is" if num_missing == 1 else "are"} {num_missing} opening "{tag}" tags that are missing'
                 )
 
-    text_code_locs = {}
-
-    if replace_text_codes:
-        for text_code in text_codes:
-            all_idxs = find_all_occurrences(tagged_text, TEXT_CODE.format(text_code))
-            for idx in all_idxs:
-                text_code_locs[idx] = text_code
-
     if formatting_error_tags:
         error_lines = ["Formatting errors:"]
 
@@ -152,8 +188,12 @@ def tkinter_text_tag_formatter(
             sys.exit(-1)
         else:
             text_area.config(state=text_area_state)
-            warnings = tkinter_text_tag_formatter(text_area, tagged_text, text_codes=text_codes, return_warnings=True)
-            return choose_what_to_return(formatting_error_tags, warnings, return_errors, return_warnings)
+            warnings, formatted_text = tkinter_text_tag_formatter(
+                text_area, tagged_text, text_codes=text_codes, return_warnings=True, return_formatted_text=True
+            )
+            return choose_what_to_return(
+                formatting_error_tags, warnings, formatted_text, return_errors, return_warnings, return_formatted_text
+            )
 
     for tag, tag_config in formatting_tags.items():
         text_area.tag_config(tag, **tag_config)
@@ -163,9 +203,12 @@ def tkinter_text_tag_formatter(
 
     idx = 0
     txt_buffer = []
+    full_txt_buffer = []
     while idx < len(tagged_text):
         if idx in tag_start_end_locs:
-            text_area.insert(tk.END, "".join(txt_buffer), [tag for tag in formatting_tags if tag_states[tag] == 1])
+            joined_txt_buffer = "".join(txt_buffer)
+            text_area.insert(tk.END, joined_txt_buffer, [tag for tag in formatting_tags if tag_states[tag] == 1])
+            full_txt_buffer.append(joined_txt_buffer)
             txt_buffer = []
             current_tag = tag_start_end_locs[idx][0]
 
@@ -182,10 +225,6 @@ def tkinter_text_tag_formatter(
                     tag_warnings.append(
                         f" - The last opening tag was '[{last_open_tag}]',\n     but the current closing tag is '[{current_tag}/]'"
                     )
-        elif idx in text_code_locs:
-            current_text_code = text_code_locs[idx]
-            txt_buffer.append(text_codes[current_text_code])
-            idx += (len(TEXT_CODE) - 2) + len(current_text_code)
         else:
             txt_buffer.append(tagged_text[idx])
             idx += 1
@@ -206,8 +245,12 @@ def tkinter_text_tag_formatter(
 
         print("\n".join(tag_warnings), file=sys.stderr)
 
-    text_area.insert(tk.END, "".join(txt_buffer), [tag for tag in formatting_tags if tag_states[tag] == 1])
+    joined_txt_buffer = "".join(txt_buffer)
+    text_area.insert(tk.END, joined_txt_buffer, [tag for tag in formatting_tags if tag_states[tag] == 1])
+    full_txt_buffer.append(joined_txt_buffer)
 
     text_area.config(state=text_area_state)
 
-    return choose_what_to_return(formatting_error_tags, tag_warnings, return_errors, return_warnings)
+    return choose_what_to_return(
+        formatting_error_tags, tag_warnings, "".join(full_txt_buffer), return_errors, return_warnings, return_formatted_text
+    )
