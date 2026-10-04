@@ -57,6 +57,13 @@ def clear_text_area(text_area: tk.Text) -> None:
     text_area.config(state=text_area_state)
 
 
+def append_to_text_area(text_area: tk.Text, text: str) -> None:
+    text_area_state = text_area.cget("state")
+    text_area.config(state="normal")
+    text_area.insert(tk.END, text)
+    text_area.config(state=text_area_state)
+
+
 def choose_what_to_return(
     errors: list[str],
     warnings: list[str],

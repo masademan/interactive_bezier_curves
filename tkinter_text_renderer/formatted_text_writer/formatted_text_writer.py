@@ -13,20 +13,39 @@ from tkinter_text_renderer.tkinter_text_renderer import (
     OPENING_TAG,
     CLOSING_TAG,
     clear_text_area,
+    append_to_text_area,
+    find_all_occurrences,
     tkinter_text_tag_formatter,
 )
 
 HELP_GUIDE_FOR_TEXT_WRITER = f""""""
 TAGS_FOR_HELP_GUIDE = {
-    "SUBSCRIPT": {
+    "TRUE_SUBSCRIPT": {
         "font": ("Arial", 8),
         "offset": -3,
     },
     "BOLD": {
         "font": ("Arial", 11, "bold"),
     },
+    "H1": {
+        "font": ("Arial", 15, "bold"),
+    },
+    "H2": {
+        "font": ("Arial", 13, "bold"),
+    },
 }
-CODES_FOR_HELP_GUIDE = {"TAB": "    "}
+CODES_FOR_HELP_GUIDE = {
+    "TAB": "    ",
+    "TRUE_COORD_I": "(x[TRUE_SUBSCRIPT]i[TRUE_SUBSCRIPT/], y[TRUE_SUBSCRIPT]i[TRUE_SUBSCRIPT/])",
+}
+
+USE_EXAMPLES = False
+
+EXAMPLE_TEXT = """"""
+
+EXAMPLE_TAGS = """"""
+
+EXAMPLE_CODES = """"""
 
 
 class FormattedTextWriter:
@@ -59,6 +78,7 @@ class FormattedTextWriter:
         self.text_options_frame.columnconfigure(1, weight=1)
         self.text_options_frame.columnconfigure(2, weight=1)
         self.text_options_frame.columnconfigure(3, weight=1)
+        self.text_options_frame.columnconfigure(4, weight=1)
 
         self.load_text_button = tk.Button(
             self.text_options_frame,
@@ -67,25 +87,32 @@ class FormattedTextWriter:
         )
         self.load_text_button.grid(row=0, column=0, padx=5, pady=5)
 
+        self.new_text_button = tk.Button(
+            self.text_options_frame,
+            text="New text",
+            command=self.new_text,
+        )
+        self.new_text_button.grid(row=0, column=1, padx=5, pady=5)
+
         self.open_help_for_writer_button = tk.Button(
             self.text_options_frame,
             text="Help",
             command=self.open_help,
         )
-        self.open_help_for_writer_button.grid(row=0, column=1, padx=5, pady=5)
+        self.open_help_for_writer_button.grid(row=0, column=2, padx=5, pady=5)
         self.help_window = None
 
         self.clear_text_button = tk.Button(
             self.text_options_frame,
             text="Clear text",
         )
-        self.clear_text_button.grid(row=0, column=2, padx=5, pady=5)
+        self.clear_text_button.grid(row=0, column=3, padx=5, pady=5)
 
         self.copy_text_button = tk.Button(
             self.text_options_frame,
             text="Copy text",
         )
-        self.copy_text_button.grid(row=0, column=3, padx=5, pady=5)
+        self.copy_text_button.grid(row=0, column=4, padx=5, pady=5)
 
         self.text_text_area = setup_text_popup_window(self.root, undo=True)
         self.prev_text_text_content = tk.StringVar(value=self.get_text_area_content(self.text_text_area))
@@ -100,7 +127,13 @@ class FormattedTextWriter:
         self.text_text_area.bind("<KeyRelease>", lambda _event: self.updated_text_area(idx=0))
 
         self.root.bind("<Control-Key-1>", lambda _event: self.load_text())
-        self.root.bind("<Control-Key-2>", lambda _event: self.clear_and_update(self.text_text_area))
+        self.root.bind("<Control-Key-2>", lambda _event: self.new_text())
+        self.root.bind("<Control-Key-3>", lambda _event: self.open_help())
+        self.root.bind("<Control-Key-4>", lambda _event: self.clear_and_update(self.text_text_area))
+        self.root.bind(
+            "<Control-Key-5>",
+            lambda _event: self.copy_txt_to_clipboard(repr(self.get_text_area_content(self.text_text_area))[1:-1]),
+        )
 
         # Setting up root values
         self.root.update_idletasks()
@@ -158,6 +191,8 @@ class FormattedTextWriter:
         self.tags_text_area.bind("<KeyRelease>", lambda _event: self.updated_text_area(idx=1, update_preview=False))
 
         self.tags_window.bind("<Control-Key-1>", lambda _event: self.clear_and_update(self.tags_text_area))
+        self.tags_window.bind("<Control-Key-2>", lambda _event: self.update_preview())
+        self.tags_window.bind("<Control-Key-3>", lambda _event: self.copy_txt_to_clipboard(str(self.read_tags(force_read=True))))
 
         self.tags_window.update_idletasks()
         self.tags_window.focus_force()
@@ -185,7 +220,7 @@ class FormattedTextWriter:
 
         self.clear_codes_button = tk.Button(
             self.codes_settings_frame,
-            text="Clear tags",
+            text="Clear codes",
         )
         self.clear_codes_button.grid(row=0, column=0, padx=5, pady=5)
 
@@ -211,6 +246,8 @@ class FormattedTextWriter:
         self.codes_text_area.bind("<KeyRelease>", lambda _event: self.updated_text_area(idx=2, update_preview=False))
 
         self.codes_window.bind("<Control-Key-1>", lambda _event: self.clear_and_update(self.codes_text_area))
+        self.codes_window.bind("<Control-Key-2>", lambda _event: self.update_preview())
+        self.codes_window.bind("<Control-Key-3>", lambda _event: self.copy_txt_to_clipboard(str(self.read_codes(force_read=True))))
 
         self.codes_window.update_idletasks()
         self.codes_window.focus_force()
@@ -234,6 +271,7 @@ class FormattedTextWriter:
         self.preview_settings_frame.columnconfigure(0, weight=1)
         self.preview_settings_frame.columnconfigure(1, weight=1)
         self.preview_settings_frame.columnconfigure(2, weight=1)
+        self.preview_settings_frame.columnconfigure(3, weight=1)
 
         #       Text preview formatting toggle
         self.do_formatting_var = tk.BooleanVar(value=True)
@@ -269,9 +307,18 @@ class FormattedTextWriter:
         )
         self.save_text_button.grid(row=0, column=2, padx=5)
 
+        #       Text preview .txt saving as
+        self.save_text_button = tk.Button(
+            self.preview_settings_frame,
+            text="Save text as",
+            command=lambda: self.save_text(save_as=True),
+        )
+        self.save_text_button.grid(row=0, column=3, padx=5)
+
         self.preview_window.bind("<Control-Key-1>", lambda _event: self.toggle_formatting())
         self.preview_window.bind("<Control-Key-2>", lambda _event: self.toggle_text_codes())
         self.preview_window.bind("<Control-Key-3>", lambda _event: self.save_text())
+        self.preview_window.bind("<Control-Key-4>", lambda _event: self.save_text(save_as=True))
 
         #   Text preview
         tk.Label(self.preview_window, text="Text preview", font=("Arial", 12, "bold"), bg="white").pack(padx=5, pady=5)
@@ -298,6 +345,9 @@ class FormattedTextWriter:
             window.bind("<Control-Q>", lambda _event: self.bring_all_windows_up())
             window.bind("<FocusIn>", lambda event, window_idx=idx: self.check_window_focus(event, window_idx))
 
+            window.bind("<Control-n>", lambda _event: self.new_text())
+            window.bind("<Control-N>", lambda _event: self.new_text())
+
             window.bind("<Control-o>", lambda _event: self.load_text())
             window.bind("<Control-O>", lambda _event: self.load_text())
             window.bind("<Control-s>", lambda _event: self.save_text())
@@ -313,7 +363,28 @@ class FormattedTextWriter:
             self.preview_window,
         ]
 
+        self.text_area_list = [
+            self.text_text_area,
+            self.tags_text_area,
+            self.codes_text_area,
+        ]
+        if USE_EXAMPLES:
+
+            example_string_list = [
+                EXAMPLE_TEXT,
+                EXAMPLE_TAGS,
+                EXAMPLE_TAGS,
+            ]
+
+            for text_area, example_string in zip(self.text_area_list, example_string_list):
+                clear_text_area(text_area)
+                append_to_text_area(text_area, example_string)
+
+            self.update_preview()
+
     def load_text(self) -> None:
+        last_important_view_idx = self.current_important_view
+
         if not self.saved_text_progress:
             response = messagebox.askyesno(
                 "Saving progress",
@@ -321,10 +392,7 @@ class FormattedTextWriter:
             )
 
             if not response:
-                messagebox.showinfo(
-                    "Loading status",
-                    "Loading has been canceled and your unsaved work is available to edit",
-                )
+                self.focus_on_window_with_idx(last_important_view_idx)
                 return
 
         file_path = filedialog.askopenfilename(
@@ -333,10 +401,7 @@ class FormattedTextWriter:
         )
 
         if not file_path:
-            messagebox.showwarning(
-                "File loading",
-                "To load a text, you have to provide a valid file path!",
-            )
+            self.focus_on_window_with_idx(last_important_view_idx)
             return
 
         content_lines = []
@@ -345,6 +410,8 @@ class FormattedTextWriter:
                 content_lines = [line.strip() for line in f.readlines()]
         except Exception as e:
             messagebox.showerror("File loading", f"An error was encountered while loading\nError: {e}")
+
+            self.focus_on_window_with_idx(last_important_view_idx)
             return
 
         full_filename = os.path.basename(file_path)
@@ -357,11 +424,12 @@ class FormattedTextWriter:
         except ValueError as e:
             messagebox.showerror(
                 "File loading",
-                "This is an invalid save file!\nSave files cannot be edited in any way" "\nexcept for saving in the program",
+                "This is an invalid save file!\nSave files cannot be made or edited in any way"
+                "\nexcept for saving in the program",
             )
 
             self.reset_prev_text()
-
+            self.focus_on_window_with_idx(last_important_view_idx)
             return
         except Exception as e:
             messagebox.showerror(
@@ -369,6 +437,7 @@ class FormattedTextWriter:
                 f"An unknown error has occurred.\nIf you are not the maintainer of this project, let them know about this bug\nError: {e}",
             )
 
+            self.focus_on_window_with_idx(last_important_view_idx)
             return
 
         loaded_text_content = "\n".join(content_lines[text_content_idx + 2 : tag_content_idx - 3])
@@ -376,16 +445,10 @@ class FormattedTextWriter:
         loaded_code_content = "\n".join(content_lines[code_content_idx + 2 : -1])
 
         all_loaded_content = [loaded_text_content, loaded_tag_content, loaded_code_content]
-        text_areas = [self.text_text_area, self.tags_text_area, self.codes_text_area]
 
-        for text_area, loaded_content in zip(text_areas, all_loaded_content):
+        for text_area, loaded_content in zip(self.text_area_list, all_loaded_content):
             clear_text_area(text_area)
-            text_area_state = text_area.cget("state")
-            text_area.config(state="normal")
-
-            text_area.insert(tk.END, loaded_content)
-
-            text_area.config(state=text_area_state)
+            append_to_text_area(text_area, loaded_content)
 
         self.update_preview()
         self.saved_text_progress = True
@@ -398,6 +461,8 @@ class FormattedTextWriter:
         self.preview_text_area.yview("1.0")
 
         messagebox.showinfo("File loading", "File loaded successfully!")
+
+        self.focus_on_window_with_idx(last_important_view_idx)
 
     def save_txt_file(self, file_path: str, content: str, show_success: bool = True) -> bool:
         try:
@@ -429,10 +494,7 @@ class FormattedTextWriter:
             )
 
             if not file_path:
-                messagebox.showwarning(
-                    "File saving",
-                    "To save the text, you have to provide a valid file path!",
-                )
+                self.focus_on_window_with_idx(last_important_view_idx)
                 return
         else:
             file_path = self.text_file_path
@@ -454,7 +516,8 @@ class FormattedTextWriter:
             self.codes_text_area.get("1.0", "end-1c"),
             '"""',
         ]
-        if not self.save_txt_file(file_path, "\n".join(full_txt_content)):
+        if not self.save_txt_file(file_path, "\n".join(full_txt_content), show_success=False):
+            self.focus_on_window_with_idx(last_important_view_idx)
             return
 
         self.update_preview()
@@ -465,6 +528,34 @@ class FormattedTextWriter:
         for window in self.window_list:
             if window.title().endswith("*"):
                 window.title(window.title()[:-1])
+
+        self.focus_on_window_with_idx(last_important_view_idx)
+
+    def new_text(self) -> None:
+        last_important_view_idx = self.current_important_view
+
+        if not self.saved_text_progress:
+            response = messagebox.askyesno(
+                "Saving progress",
+                "You still have unsaved work, and creating a new a text will erase everything that's written\nAre you SURE you want to continue creating a new text?",
+            )
+
+            if not response:
+                self.focus_on_window_with_idx(last_important_view_idx)
+                return
+
+        for text_area in self.text_area_list:
+            clear_text_area(text_area)
+
+        self.update_preview()
+        self.saved_text_progress = True
+        self.text_file_path = None
+
+        for window in self.window_list:
+            if window.title().endswith("*"):
+                window.title(window.title()[:-1])
+
+        self.preview_text_area.yview("1.0")
 
         self.focus_on_window_with_idx(last_important_view_idx)
 
@@ -545,7 +636,9 @@ class FormattedTextWriter:
         self.root.clipboard_append(text)
         self.root.update()
 
-    def updated_text_area(self, idx: int | None = None, text_area: tk.Text | None = None, update_preview: bool = True) -> None:
+    def updated_text_area(
+        self, idx: int | None = None, text_area: tk.Text | None = None, update_preview: bool = True
+    ) -> None:
         if idx is None and text_area is None:
             raise ValueError("Both idx and text_area can't be None at the same time, only one can be None at a time")
         if idx is not None and text_area is not None:
@@ -557,16 +650,10 @@ class FormattedTextWriter:
             self.prev_codes_text_content,
         ]
 
-        text_area_list = [
-            self.text_text_area,
-            self.tags_text_area,
-            self.codes_text_area,
-        ]
-
         if idx is None:
-            idx = text_area_list.index(text_area)
+            idx = self.text_area_list.index(text_area)
 
-        if prev_text_content_list[idx].get() == self.get_text_area_content(text_area_list[idx]):
+        if prev_text_content_list[idx].get() == self.get_text_area_content(self.text_area_list[idx]):
             return
 
         self.add_asterisk_to_window_idx(idx)
@@ -575,7 +662,7 @@ class FormattedTextWriter:
         if update_preview:
             self.root.after_idle(self.update_preview)
         else:
-            prev_text_content_list[idx].set(self.get_text_area_content(text_area_list[idx]))
+            prev_text_content_list[idx].set(self.get_text_area_content(self.text_area_list[idx]))
 
     def add_asterisk_to_window_idx(self, idx: int) -> None:
         if not self.window_list[idx].title().endswith("*"):
@@ -598,6 +685,7 @@ class FormattedTextWriter:
         prev_preview_text_area = self.get_text_area_content(self.preview_text_area)
 
         current_scroll_pos = self.preview_text_area.yview()
+        top_idx = self.preview_text_area.index("@0,0")
         clear_text_area(self.preview_text_area)
         errors, warnings, formatted_text = tkinter_text_tag_formatter(
             text_area=self.preview_text_area,
@@ -621,8 +709,11 @@ class FormattedTextWriter:
             self.get_text_diff_plus_buffer(
                 prev_preview_text_area,
                 formatted_text,
-                num_char_buffer=50,
+                start_num_char_buffer=10,
+                increasing_mode="arithmetic",
+                increase_amount=10,
             ),
+            top_idx,
         )
 
         self.preview_text_area.config(bg="white")
@@ -646,21 +737,36 @@ class FormattedTextWriter:
 
         return -1
 
-    def get_text_diff_plus_buffer(self, prev_text: str, new_text: str, num_char_buffer: int = 25) -> str:
-        if num_char_buffer < 0:
-            raise ValueError("num_char_buffer CANNOT be less than 0")
+    def get_text_diff_plus_buffer(self, prev_text: str, new_text: str, start_num_char_buffer: int = 25, increasing_mode: Literal["geometric", "arithmetic"] = "arithmetic", increase_amount: int = 10) -> str:
+        if start_num_char_buffer < 0:
+            raise ValueError("start_num_char_buffer CANNOT be less than 0")
 
         idx = self.find_text_diff_idx(prev_text, new_text)
 
         if idx == -1:
             return ""
 
-        return new_text[idx - num_char_buffer : idx + 1 + num_char_buffer]
+        num_char_buffer = start_num_char_buffer
+
+        text_diff = new_text[idx - num_char_buffer : idx + 1 + num_char_buffer]
+        while len(find_all_occurrences(new_text, text_diff)) > 1:
+            if increasing_mode == "geometric":
+                num_char_buffer *= increase_amount
+            elif increasing_mode == "arithmetic":
+                num_char_buffer += increase_amount
+            else:
+                raise ValueError("increasing_mode has to be either \"geometric\" or \"arithmetic\"")
+
+            text_diff = new_text[idx - num_char_buffer : idx + 1 + num_char_buffer]
+
+        return text_diff
 
     # Partially AI generated
-    def scroll_to_text_diff(self, text_area: tk.Text, changed_text: str) -> None:
+    def scroll_to_text_diff(self, text_area: tk.Text, changed_text: str, top_idx: str) -> None:
         if not changed_text:
             return
+
+        text_area.yview(top_idx)
 
         text_area.update_idletasks()
 
@@ -691,6 +797,7 @@ class FormattedTextWriter:
                 units_to_scroll = pixel_offset // line_height
 
                 if units_to_scroll != 0:
+
                     text_area.yview_scroll(units_to_scroll, "units")
 
     def clear_and_update(self, text_area: tk.Text) -> None:
@@ -1024,7 +1131,7 @@ class FormattedTextWriter:
             else:
                 widget.mark_set("anchor", "sel.first")
 
-        current_line = widget.index("insert").split('.')[0]
+        current_line = widget.index("insert").split(".")[0]
         if current_line == "1":
             widget.mark_set("insert", "1.0")
         else:
@@ -1051,9 +1158,9 @@ class FormattedTextWriter:
             else:
                 widget.mark_set("anchor", "sel.first")
 
-        current_line = widget.index("insert").split('.')[0]
-        last_line = widget.index("end - 1 chars").split('.')[0]
-        
+        current_line = widget.index("insert").split(".")[0]
+        last_line = widget.index("end - 1 chars").split(".")[0]
+
         if current_line == last_line:
             widget.mark_set("insert", "end - 1 chars")
         else:
@@ -1080,11 +1187,11 @@ class FormattedTextWriter:
             start_index = widget.index("insert")
             end_index = start_index
 
-        start_line = int(start_index.split('.')[0])
-        end_line = int(end_index.split('.')[0])
+        start_line = int(start_index.split(".")[0])
+        end_line = int(end_index.split(".")[0])
 
         # If a highlight ends exactly at the start of the next line, don't drag that next line up
-        if end_index.split('.')[1] == '0' and end_line > start_line:
+        if end_index.split(".")[1] == "0" and end_line > start_line:
             end_line -= 1
 
         if start_line <= 1:
@@ -1092,16 +1199,16 @@ class FormattedTextWriter:
 
         # 2. Store current cursor and anchor state so we can shift them later
         has_sel = bool(widget.tag_ranges("sel"))
-        insert_line, insert_col = map(int, widget.index("insert").split('.'))
-        
+        insert_line, insert_col = map(int, widget.index("insert").split("."))
+
         anchor_pos = widget.index("anchor") if "anchor" in widget.mark_names() else None
         if anchor_pos:
-            anchor_line, anchor_col = map(int, anchor_pos.split('.'))
+            anchor_line, anchor_col = map(int, anchor_pos.split("."))
 
         # 3. Extract the text blocks to swap
         swap_start = f"{start_line - 1}.0"
         swap_end = f"{end_line + 1}.0"
-        
+
         line_above = widget.get(swap_start, f"{start_line}.0")
         block_to_move = widget.get(f"{start_line}.0", swap_end)
 
@@ -1137,28 +1244,28 @@ class FormattedTextWriter:
             start_index = widget.index("insert")
             end_index = start_index
 
-        start_line = int(start_index.split('.')[0])
-        end_line = int(end_index.split('.')[0])
+        start_line = int(start_index.split(".")[0])
+        end_line = int(end_index.split(".")[0])
 
-        if end_index.split('.')[1] == '0' and end_line > start_line:
+        if end_index.split(".")[1] == "0" and end_line > start_line:
             end_line -= 1
 
         # Tkinter's absolute "end" is technically an empty phantom line past your real text.
         # We need to find the last *actual* line of text to prevent dragging text off the bottom.
-        last_actual_line = int(widget.index("end - 1 chars").split('.')[0])
+        last_actual_line = int(widget.index("end - 1 chars").split(".")[0])
         if end_line >= last_actual_line:
             return "break"  # Already at the bottom, can't move down
 
         has_sel = bool(widget.tag_ranges("sel"))
-        insert_line, insert_col = map(int, widget.index("insert").split('.'))
-        
+        insert_line, insert_col = map(int, widget.index("insert").split("."))
+
         anchor_pos = widget.index("anchor") if "anchor" in widget.mark_names() else None
         if anchor_pos:
-            anchor_line, anchor_col = map(int, anchor_pos.split('.'))
+            anchor_line, anchor_col = map(int, anchor_pos.split("."))
 
         swap_start = f"{start_line}.0"
         swap_end = f"{end_line + 2}.0"
-        
+
         block_to_move = widget.get(swap_start, f"{end_line + 1}.0")
         line_below = widget.get(f"{end_line + 1}.0", swap_end)
 
@@ -1178,6 +1285,52 @@ class FormattedTextWriter:
                 widget.tag_add("sel", "insert", "anchor")
             elif widget.compare("insert", ">", "anchor"):
                 widget.tag_add("sel", "anchor", "insert")
+
+        widget.see("insert")
+        return "break"
+
+    # Partially AI generated
+    def text_box_shift_home(self, event: tk.Event) -> str:
+        widget = event.widget
+
+        if not widget.tag_ranges("sel"):
+            widget.mark_set("anchor", "insert")
+        elif "anchor" not in widget.mark_names():
+            if widget.compare("insert", "==", "sel.first"):
+                widget.mark_set("anchor", "sel.last")
+            else:
+                widget.mark_set("anchor", "sel.first")
+
+        widget.mark_set("insert", "insert displaylinestart")
+
+        widget.tag_remove("sel", "1.0", "end")
+        if widget.compare("insert", "<", "anchor"):
+            widget.tag_add("sel", "insert", "anchor")
+        elif widget.compare("insert", ">", "anchor"):
+            widget.tag_add("sel", "anchor", "insert")
+
+        widget.see("insert")
+        return "break"
+
+    # Partially AI generated
+    def text_box_shift_end(self, event: tk.Event) -> str:
+        widget = event.widget
+
+        if not widget.tag_ranges("sel"):
+            widget.mark_set("anchor", "insert")
+        elif "anchor" not in widget.mark_names():
+            if widget.compare("insert", "==", "sel.first"):
+                widget.mark_set("anchor", "sel.last")
+            else:
+                widget.mark_set("anchor", "sel.first")
+
+        widget.mark_set("insert", "insert displaylineend")
+
+        widget.tag_remove("sel", "1.0", "end")
+        if widget.compare("insert", "<", "anchor"):
+            widget.tag_add("sel", "insert", "anchor")
+        elif widget.compare("insert", ">", "anchor"):
+            widget.tag_add("sel", "anchor", "insert")
 
         widget.see("insert")
         return "break"
@@ -1326,8 +1479,11 @@ class FormattedTextWriter:
         text_area.bind("<Shift-Left>", self.text_box_shift_left_arrow)
         text_area.bind("<Shift-Right>", self.text_box_shift_right_arrow)
 
-        text_area.bind("Button-1>", self.text_box_left_click)
+        text_area.bind("<Button-1>", self.text_box_left_click)
         text_area.bind("<B1-Motion>", self.text_box_left_click_drag)
+
+        text_area.bind("<Shift-Home>", self.text_box_shift_home)
+        text_area.bind("<Shift-End>", self.text_box_shift_end)
 
     def get_text_area_content(self, text_area: tk.Text) -> str:
         return text_area.get("1.0", "end-1c")
@@ -1397,6 +1553,10 @@ class FormattedTextWriter:
 
         self.root.destroy()
 
+
+"""
+make shift + end and shift + home shortcut
+"""
 
 if __name__ == "__main__":
     formatted_text_writer = FormattedTextWriter()

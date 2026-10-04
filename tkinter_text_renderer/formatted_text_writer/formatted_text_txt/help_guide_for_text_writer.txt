@@ -11,14 +11,37 @@ So for a "BOLD" tag, the opening and closing tags would be written like {OPENING
 
 Text codes are written in the form {TEXT_CODE.format("CODE_NAME_HERE")}, so for a "TAB" code, it would be written like {TEXT_CODE.format("TAB")}.
 
-There are 4 buttons at the top of the window which say "Load text", "Help", "Clear text", and "Copy text".
+If there's an error in your formatting, then the preview window will turn red, and if there's a warning in your formatting, the preview window will turn yellow. When there's an error, formatting will stop completely, but if there's a warning, it'll still format everything.
+Errors happen when there's an open tag without a closing, or vice versa. And this usually happens with a typo or a missing "/" in the closing tag.
+Warnings happen when there's a closing tag between an opening and closing tag that doesn't correspond to either. For example, if there was an opening tag for red text, an opening tag for underlined text, a closing tag for red text, and then a closing tag for underlined text, there'd be an error.
+Warning: [RED][UNDERLINED][RED/][UNDERLINED/]
+Correct: [RED][UNDERLINED][UNDERLINED/][RED/]
 
-
+There are 5 buttons at the top of the window which say "Load text", "New text", "Help", "Clear text", and "Copy text".
+1. Pressing the "Load text" button opens a popup to ask which .txt file you want to load in. It needs to be a valid .txt file from this program, otherwise it won't load correctly. The only way to guarantee that the .txt works is by saving the text you made and then later loading it in.
+2. Pressing the "New text" button clears all the text inputs and removes the link of the current edited text to any .txt file path.
+3. Pressing the "Help" button opens a window to explain how to use the entire program. That help guide was written in this very program!
+4. Pressing the "Clear text" button clears the text in this window. This action is able to be undone using Ctrl + Z.
+5. Pressing the "Copy text" button turns it into a valid Python string, which you can then paste into a triple quoted string. Do note that the copied text doesn't include the quotes, but only the text that goes inside the quotes.
 
 [/TAB][H1]Formatting tag area:[H1/]
 [H2]Basics[H2/]
 It has the title "Formatted text formatting" and this is where all the formatting tags are defined.
 
+These should be written like writing variables in Python. It should be in this form:
+TAG_NAME = { SETTING_NAME: VALUE_TO_SET }
+
+Where "TAG_NAME" is the name you want for that code (rules on naming later), and "{ SETTING_NAME: VALUE_TO_SET }" to be the setting for the text property.
+
+Formatting tags are useful because they let you customize almost any property of text. You can change the font family, size, of styling (bold, italic, etc.), vertical positioning, color, background, etc.
+
+To format text with a formatting tag, you need to use the opening and closing tag. So if you had a tag to turn text red named "RED", you'd write the text like this:
+non red text [RED]your red text here[RED/] non red text
+
+There are 3 buttons at the top of the window which say "Clear tags", "Update preview", and "Convert tags and copy"
+1. Pressing "Clear tags" clears all the tags in the window, essentially allowing you to restart clean when writing tags.
+2. Pressing "Update preview" forces an update on the update window. This is because the tags window doesn't constantly update the preview with changes since you might not be finished with writing a tag.
+3. Pressing "Convert tags and copy" takes the tags you wrote, turns it into a dict and copies it to your clipboard. This lets you paste it into a Python file as is.
 
 [H2]Formatting tag rules[H2/]
 
@@ -39,10 +62,10 @@ COORD_I = (x[SUBSCRIPT]i[SUBSCRIPT/], y[SUBSCRIPT]i[SUBSCRIPT/])
 So instead of writing the mess of text from earlier, you could just write "[/COORD_I]" to get "[/TRUE_COORD_I]"
 This makes writing formatted text much easier to read and navigate.
 
-There are 3 buttons at the top of the window which say "Clear tags", "Update preview", and "Convert codes and copy"
-Pressing "Clear tags" clears all the text in the window, essentially allowing you to restart clean when writing tags.
-Pressing "Update preview" forces an update on the update window. This is because the tags window doesn't constantly update the preview with changes since you might not be finished with writing a tag.
-Pressing "Convert codes and copy" takes the tags you wrote, turns it into a dict and copies it to your clipboard. This lets you paste it into a Python file as is.
+There are 3 buttons at the top of the window which say "Clear codes", "Update preview", and "Convert codes and copy"
+1. Pressing "Clear codes" clears all the codes in the window, essentially allowing you to restart clean when writing codes.
+2. Pressing "Update preview" forces an update on the update window. This is because the tags window doesn't constantly update the preview with changes since you might not be finished with writing a tag.
+3. Pressing "Convert codes and copy" takes the tags you wrote, turns it into a dict and copies it to your clipboard. This lets you paste it into a Python file as is.
 
 [H2]Text code rules[H2/]
 It's not necessary, but it's recommended to make all the codes in all caps to make them distinct from normal text.
@@ -51,17 +74,17 @@ Again, these text codes should be written like normal variables in Python.
 
 Once you write the text code name, you can have any number of spaces, an equals sign, any number of spaces, and then an opening single or double quote followed by your text and the accompanying closing quote.
 Again, like Python, if you want double quotes in the text code, you can use single quotes for the opening and closing quotes, and for single quotes in the text code, use double quotes.
-But also like in Python, you can use \\" or \\' to make sure that the quote is rendered properly and avoids bugs.
+But also like in Python, you can use \" or \' to make sure that the quote is rendered properly and avoids bugs.
 
 Finally, if the text code is getting too long, you can make a break the string into 2 lines with a backslash.
 This doesn't add a newline character, and the code interpretes the string as unbroken. Again, spaces between the closing quote and backslash don't matter, like in regular Python.
 Example:
-LONG_THING = "This sentence is pretty long" \\
+LONG_THING = "This sentence is pretty long" \
 ", so let's break it into 2 lines"
 
-The code would interpret this as "This sentence is pretty long, so let's break it into 2 lines", again, with no newline characters added.
+The code would interpret this as "This sentence is pretty long, so let's break it into 2 lines" with no newline characters added.
 
-Also like regular Python strings, you can also have escape codes, like your usual \\t, \\n, \\\\, etc.
+Also like regular Python strings, you can also have escape codes, like your usual \t, \n, \\, etc.
 
 
 [/TAB][H1]Text preview area:[H1/]
@@ -69,10 +92,13 @@ It has the title "Formatted text preview" and this is where the preview of the f
 
 Whatever you type in the "Formatted text writer" area is shown here with the formatting tags and text codes changing the text accordingly.
 
-There are 2 checkboxes and 1 button at the top of the window that says "Do formatting", "Do text codes", and "Save text"
-The "Do formatting" checkbox controls whether the formatting tags are used or not. If they are used, you don't see them in the preview and the text gets formatted. If they aren't used, then the tags are just placed into the preview without the formatting on the enclosed text.
-The "Do text codes" checkbox works similarly to the "Do formatting" one, but instead of formatting text, it'll be replaced by its corresponding string. So if it's on, then it'll replace the text codes, otherwise, you'll just see the text codes in the preview.
-Pressing the "Save text" button saves the guide you made in a .txt file. This button will open up a prompt to select which file to save to. You can choose an existing .txt file to overwrite it, like if you loaded the text from a .txt file and you want to save what you have.
+There is more info in the section about the text writer window in the "Main text writing area" chapter, but when there's an error with the formatting tags, the background in this window turns red. And when there's a warning, it turns yellow.
+
+There are 2 checkboxes and 2 button at the top of the window that says "Do formatting", "Do text codes", and "Save text" and "Save text as"
+1. The "Do formatting" checkbox controls whether the formatting tags are used or not. If they are used, you don't see them in the preview and the text gets formatted. If they aren't used, then the tags are just placed into the preview without the formatting on the enclosed text.
+2. The "Do text codes" checkbox works similarly to the "Do formatting" one, but instead of formatting text, it'll be replaced by its corresponding string. So if it's on, then it'll replace the text codes, otherwise, you'll just see the text codes in the preview.
+3. Pressing the "Save text" button saves the guide you made in a .txt file. If the text doesn't have a specified file linked to it, it'll prompt you to give it a file name. Once it has a linked file, pressing the save button uses the same file name.
+4. Pressing the "Save text as" button works like the "Save text" button, but instead of it using the same file name once it's linked, it'll always prompt you for the file name. This can allow you to copy a text save or replace other files. But doing this will change the linked file that the current edited text is one
 
 
 [/TAB][H1]General info[H1/]
