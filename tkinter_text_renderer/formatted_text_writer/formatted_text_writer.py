@@ -357,9 +357,11 @@ class FormattedTextWriter:
             window.bind("<Control-Q>", lambda _event: self.bring_all_windows_up())
             window.bind("<FocusIn>", lambda event, window_idx=idx: self.check_window_focus(event, window_idx))
 
+            window.bind("<Control-p>", lambda _event: self.update_preview())
+            window.bind("<Control-P>", lambda _event: self.update_preview())
+
             window.bind("<Control-n>", lambda _event: self.new_text())
             window.bind("<Control-N>", lambda _event: self.new_text())
-
             window.bind("<Control-o>", lambda _event: self.load_text())
             window.bind("<Control-O>", lambda _event: self.load_text())
             window.bind("<Control-s>", lambda _event: self.save_text())
@@ -614,43 +616,191 @@ class FormattedTextWriter:
             },
         }
 
-    def read_codes(self, force_read: bool = False) -> dict[str, str]:  # TODO
+    def parse_tags(self, tag_text: str, do_errors: bool = True) -> tuple[bool, dict[str, dict[str, Any]]]:  # TODO
+        return True, {}
+
+    def read_codes(self, force_read: bool = False) -> dict[str, str]:
         if not self.do_text_codes_var.get() and not force_read:
             return {}
 
-        """
-        write code that can read lines like variable names:
-        HI = "hi"
-        TAB = "   "
-        etc.
+        successful, codes = self.parse_codes(self.get_text_area_content(self.codes_text_area))
+        if not successful:
+            return self.parse_codes(self.prev_codes_text_content.get())[1]
 
-        
-        allow for backslash continuations:
-        REALLY_LONG = "yeah, this it"\
-        "pretty long, but it doesn't"\
-        "contain any new lines"
+        return codes
 
-        
-        idea for reading:
-        read through the lines one by one
+    def parse_codes(self, code_text: str, do_errors: bool = True) -> tuple[bool, dict[str, str]]:
+        def is_var_declaration_line(line: str) -> bool:
+            equal_idx = len(line)
+            single_quote_idx = -1
+            double_quote_idx = -1
 
-        reading:
-        if a line is empty, skip
-        if a line isn't empty, doesn't have an equal sign, and isn't after a line with a backslash, error
-        if a line has an equal sign, then read it, if there's a backslash, check the next line
-        if the next line doesn't have a string, error
-        else, read it and check if it has a backslash
-        repeat from reading:
+            for idx in range(len(line)):
+                char = line[idx]
 
-        
-        if the function errors, just return the same codes from before the change
-        """
+                if char == "=":
+                    equal_idx = idx
+                elif char == "'":
+                    single_quote_idx = idx
+                elif char == '"':
+                    double_quote_idx = idx
 
-        return {
-            "TAB": "    ",
-            "TRUE_TAB": "\t",
-            "TRUE_COORD_I": "(x[TRUE_SUBSCRIPT]i[TRUE_SUBSCRIPT/], y[TRUE_SUBSCRIPT]i[TRUE_SUBSCRIPT/])",
-        }
+                if equal_idx != len(line) and (single_quote_idx != -1 or double_quote_idx != -1):
+                    break
+
+            return equal_idx < single_quote_idx or equal_idx < double_quote_idx
+
+        def toggle_using_triple_quotes(line: str, do_errors: bool) -> tuple[bool, bool]:
+            line_idx = 0
+            triple_quotes_seen = 0
+
+            while line_idx < len(line):
+                if line[line_idx : line_idx + 3] == '"""':
+                    triple_quotes_seen += 1
+                    line_idx += 2
+
+                if line[line_idx] == "\\":
+                    triple_quotes_seen = 0
+
+                if triple_quotes_seen == 3:
+                    if do_errors:
+                        last_important_view_idx = self.current_important_view
+                        messagebox.showerror("Text code", f"Line '{line}' has invalid triple quote usage")
+                        self.focus_on_window_with_idx(last_important_view_idx)
+
+                    return False, True
+
+                line_idx += 1
+
+            return triple_quotes_seen % 2 == 1, False
+
+        def has_quote_errors(line: str, do_errors: bool) -> tuple[str, bool]:
+            line_chars = []
+            
+            single_quotes_seen = 0
+            double_quotes_seen = 0
+            triple_quotes_seen = 0
+
+            just_saw_backslash = False
+
+            line_idx = 0
+            while line_idx < len(line):
+                if (single_quotes_seen == 2 or double_quotes_seen == 2 or triple_quotes_seen == 2) and line[line_idx] in ["'", '"']:
+                    if do_errors:
+                        last_important_view_idx = self.current_important_view
+                        messagebox.showerror("Text code", f"Line '{line}' is missing a backslash between quotes")
+                        self.focus_on_window_with_idx(last_important_view_idx)
+
+                    return "", True
+
+                if line[line_idx] == "'" and double_quotes_seen == 0 and triple_quotes_seen == 0:
+                    single_quotes_seen += 1
+                    just_saw_backslash = False
+                elif line[line_idx] == '"' and single_quotes_seen == 0:
+                    if line[line_idx: line_idx + 3] == '"""' and double_quotes_seen == 0:
+                        triple_quotes_seen += 1
+                        just_saw_backslash = False
+                        line_idx += 2
+                    elif triple_quotes_seen == 0:
+                        double_quotes_seen += 1
+                        just_saw_backslash = False
+
+                if line[line_idx] == "\\":
+                    if just_saw_backslash:
+                        if do_errors:
+                            last_important_view_idx = self.current_important_view
+                            messagebox.showerror("Text code", f"Line '{line}' has 2 backslashes in a row")
+                            self.focus_on_window_with_idx(last_important_view_idx)
+
+                        return "", True
+
+                    just_saw_backslash = True
+                    single_quotes_seen = 0
+                    double_quotes_seen = 0
+                    triple_quotes_seen = 0
+
+                if single_quotes_seen == 3 or double_quotes_seen == 3 or triple_quotes_seen == 3:
+                    if do_errors:
+                        last_important_view_idx = self.current_important_view
+                        messagebox.showerror("Text code", f"Line '{line}' is missing a backslash between quotes")
+                        self.focus_on_window_with_idx(last_important_view_idx)
+
+                    return "", True
+
+                if line[line_idx].strip() != "" or single_quotes_seen == 1 or double_quotes_seen == 1 or triple_quotes_seen == 1:
+                    line_chars.append(line[line_idx])
+
+                line_idx += 1
+
+            if single_quotes_seen % 2 != 0 or double_quotes_seen % 2 != 0 or triple_quotes_seen % 2 != 0:
+                if do_errors:
+                    last_important_view_idx = self.current_important_view
+                    messagebox.showerror("Text code", f"Line '{line}' has quotes left unclosed")
+                    self.focus_on_window_with_idx(last_important_view_idx)
+
+                return "", True
+
+            return "".join(line_chars), False
+
+        def make_a_single_string(line: str) -> tuple[str, str]:
+            var_name = line.split("=")[0]
+            line_pieces = line.split("\\")
+            line_pieces[0] = line_pieces[0][len(var_name) + 1:]
+            single_string = []
+
+            for line_piece in line_pieces:
+                if line_piece[0] == "'":
+                    single_string.append(line_piece[1:-1])
+                elif line_piece[:3] == '"""':
+                    single_string.append(line_piece[3:-3])
+                elif line_piece[0] == '"':
+                    single_string.append(line_piece[1:-1])
+
+            return var_name, "".join(single_string)
+
+        # Get naive lines
+        naive_lines: list[str] = []
+        for line in code_text.split("\n"):
+            stripped_naive_line = line.strip()
+            if stripped_naive_line != "":
+                naive_lines.append(stripped_naive_line)
+
+        # Get var lines
+        var_lines: list[str] = []
+        var_line_idx = -1
+        using_triple_quotes = False
+        for naive_line in naive_lines:
+            if is_var_declaration_line(naive_line):
+                var_lines.append(naive_line)
+                var_line_idx += 1
+            else:
+                if using_triple_quotes:
+                    var_lines[var_line_idx] += "\n"
+                var_lines[var_line_idx] += naive_line
+
+            toggle_using, has_error = toggle_using_triple_quotes(naive_line, do_errors)
+            if has_error:
+                return False, {}
+
+            if toggle_using:
+                using_triple_quotes = not using_triple_quotes
+
+        # Get stripped var lines
+        stripped_var_lines: list[str] = []
+        for var_line in var_lines:
+            stripped_var_line, has_error = has_quote_errors(var_line, do_errors)
+            if has_error:
+                return False, {}
+            
+            stripped_var_lines.append(stripped_var_line)
+
+        # Replace single and triple quotes with double quotes and remove backslashes
+        final_var_vals: dict[str, str] = {}
+        for var_line in stripped_var_lines:
+            var_name, var_val = make_a_single_string(var_line)
+            final_var_vals[var_name] = var_val
+
+        return True, final_var_vals
 
     def copy_txt_to_clipboard(self, text: str) -> None:
         self.root.clipboard_clear()
@@ -682,8 +832,6 @@ class FormattedTextWriter:
 
         if update_preview:
             self.root.after_idle(self.update_preview)
-        else:
-            prev_text_content_list[idx].set(self.get_text_area_content(self.text_area_list[idx]))
 
     def add_asterisk_to_window_idx(self, idx: int) -> None:
         if not self.window_list[idx].title().endswith("*"):
@@ -815,42 +963,42 @@ class FormattedTextWriter:
         # 1. Set the internal scroll state, but DO NOT call update_idletasks().
         # This keeps the view in memory without flashing it to the user's monitor.
         text_area.yview(top_idx)
-        
+
         match_idx = text_area.search(changed_text, "1.0", stopindex=tk.END, exact=True)
         if not match_idx:
             return
 
         # Calculate the exact index where the changed text ends
         match_end_idx = f"{match_idx}+{len(changed_text)}c"
-        
+
         widget_height = text_area.winfo_height()
 
-        # The internal text_area.index("@...") queries will natively force 
+        # The internal text_area.index("@...") queries will natively force
         # geometry updates for these specific coordinates without drawing them.
         top_screen_idx = text_area.index("@0,0")
         bottom_screen_idx = text_area.index(f"@0,{widget_height}")
-        
-        # 3. Add the "update" flag. 
-        # This explicitly tells Tkinter's C-backend to mathematically calculate 
+
+        # 3. Add the "update" flag.
+        # This explicitly tells Tkinter's C-backend to mathematically calculate
         # text wrapping right now, without updating the visual display.
         visible_dl = text_area.count(top_screen_idx, bottom_screen_idx, "update", "displaylines")
         max_visible_lines = visible_dl if visible_dl else 1
-        
+
         # Check how many lines exist between the END of the edit and the end of the document
         lines_to_end = text_area.count(match_end_idx, "end-1c", "update", "displaylines")
         lines_below_edit = lines_to_end if lines_to_end else 0
-        
+
         # 4. Bulletproof Bottom Pinning
         if lines_below_edit < max_visible_lines:
             text_area.yview_moveto(1.0)
             return
-            
+
         # 5. One-Shot Mathematical Placement
-        text_area.yview(match_idx) 
-        
+        text_area.yview(match_idx)
+
         fraction_to_ideally_place_edit = 1 / 8
         ideal_center_y = int(widget_height * fraction_to_ideally_place_edit)
-        
+
         try:
             text_area.yview_scroll(-ideal_center_y, "pixels")
         except tk.TclError:
@@ -862,8 +1010,12 @@ class FormattedTextWriter:
 
     def reset_prev_text(self) -> None:
         self.prev_text_text_content.set(self.get_text_area_content(self.text_text_area))
-        self.prev_tags_text_content.set(self.get_text_area_content(self.tags_text_area))
-        self.prev_codes_text_content.set(self.get_text_area_content(self.codes_text_area))
+
+        if self.parse_tags(self.get_text_area_content(self.tags_text_area), do_errors=False)[0]:
+            self.prev_tags_text_content.set(self.get_text_area_content(self.tags_text_area))
+
+        if self.parse_codes(self.get_text_area_content(self.codes_text_area), do_errors=False)[0]:
+            self.prev_codes_text_content.set(self.get_text_area_content(self.codes_text_area))
 
     def toggle_formatting(self) -> None:
         self.do_formatting_var.set(not self.do_formatting_var.get())
@@ -1514,6 +1666,8 @@ class FormattedTextWriter:
         text_area.bind("<Control-Right>", self.text_box_ctrl_right_arrow)
         text_area.bind("<Control-Shift-Left>", self.text_box_ctrl_shift_left_arrow)
         text_area.bind("<Control-Shift-Right>", self.text_box_ctrl_shift_right_arrow)
+        text_area.bind("<Shift-Left>", self.text_box_shift_left_arrow)
+        text_area.bind("<Shift-Right>", self.text_box_shift_right_arrow)
 
         text_area.bind("<Control-Shift-Up>", self.text_box_shift_up)
         text_area.bind("<Control-Shift-Down>", self.text_box_shift_down)
@@ -1524,22 +1678,17 @@ class FormattedTextWriter:
         text_area.bind("<Alt-Up>", self.text_box_alt_up)
         text_area.bind("<Alt-Down>", self.text_box_alt_down)
 
-        text_area.bind("<Double-Button-1>", self.text_box_double_click)
+        text_area.bind("<Shift-Home>", self.text_box_shift_home)
+        text_area.bind("<Shift-End>", self.text_box_shift_end)
 
+        text_area.bind("<Button-1>", self.text_box_left_click)
+        text_area.bind("<B1-Motion>", self.text_box_left_click_drag)
+        text_area.bind("<Double-Button-1>", self.text_box_double_click)
         text_area.bind("<Shift-Button-1>", self.text_box_shift_left_click)
 
         text_area._default_insertofftime = text_area.cget("insertofftime")
         text_area._blink_timer = None
         text_area.bind("<Key>", self.keep_cursor_solid)
-
-        text_area.bind("<Shift-Left>", self.text_box_shift_left_arrow)
-        text_area.bind("<Shift-Right>", self.text_box_shift_right_arrow)
-
-        text_area.bind("<Button-1>", self.text_box_left_click)
-        text_area.bind("<B1-Motion>", self.text_box_left_click_drag)
-
-        text_area.bind("<Shift-Home>", self.text_box_shift_home)
-        text_area.bind("<Shift-End>", self.text_box_shift_end)
 
     def get_text_area_content(self, text_area: tk.Text) -> str:
         return text_area.get("1.0", "end-1c")

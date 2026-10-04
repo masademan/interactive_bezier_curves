@@ -122,32 +122,96 @@ Each sub-heading in this chapter will be the domain where the following shortcut
 
 [H2]All windows (except the help guide)[H2/]
 Closing the program:
-Escape[/TRUE_TAB][/TRUE_TAB]- Close the program
-Ctrl + W[/TRUE_TAB][/TRUE_TAB]- Close the program
-Ctrl + Shift + W[/TRUE_TAB][/TRUE_TAB]- Close the program
+Escape[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Close the program
+Ctrl + W[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Close the program
+Ctrl + Shift + W[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Close the program
 
 Project/file management:
-Ctrl + O[/TRUE_TAB][/TRUE_TAB]- Open a .txt file
-Ctrl + S[/TRUE_TAB][/TRUE_TAB]- Save to .txt filee
-Ctrl + Shift + S[/TRUE_TAB][/TRUE_TAB]- Save as .txt file
-Ctrl + N[/TRUE_TAB][/TRUE_TAB]- Create new formatted text project
+Ctrl + O[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Open a .txt file
+Ctrl + S[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Save to .txt filee
+Ctrl + Shift + S[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Save as .txt file
+Ctrl + N[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Create new formatted text project
 
 Window management:
-Ctrl + Page Down[/TRUE_TAB][/TRUE_TAB]- Cycle between the windows (Order: Main, Tags, Codes, Preview, repeat)
-Ctrl + Page Up[/TRUE_TAB][/TRUE_TAB]- Cycle between the windows (Order: Preview, Codes, Tags, Main, repeat)
-Ctrl + Q[/TRUE_TAB][/TRUE_TAB]- Bring all the windows to the top and visible
+Ctrl + Page Down[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Cycle between the windows (Order: Main, Tags, Codes, Preview, repeat)
+Ctrl + Page Up[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Cycle between the windows (Order: Preview, Codes, Tags, Main, repeat)
+Ctrl + Q[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Bring all the windows to the top and visible
+
+Misc:
+Ctrl + P[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Update preview
+
+[H2]All text inputs[H2/]
+Most of the shortcuts here work like in most text editors and especially like VS code
+
+Text history:
+Ctrl + Z[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Undo
+Ctrl + Shift + Z[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Redo
+Ctrl + Y[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Redo
+
+Text deletion:
+Ctrl + Backspace[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB] Delete a word to the left
+Ctrl + Delete[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Delete a word to the right
+
+Text navigation:
+Left arrow[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Move the cursor one character to the left
+Right arrow[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Move the cursor one character to the right
+Up arrow[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Move the cursor one line up
+Down arrow[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Move the cursor one line down
+Ctrl + Left arrow[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Move the cursor one word to the left
+Ctrl + Right arrow[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Move the cursor one word to the right
+Ctrl + Up arrow[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Scroll the text up by 1 line
+Ctrl + Down arrow[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Scroll the text down by 1 line
+
+Text selection:
+Shift + Left arrow[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Move the cursor one character to the left and change the selection
+Shift + Right arrow[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Move the cursor one character to the right and change the selection
+Ctrl + Shift + Left arrow[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Move the cursor one word to the left and change the selection
+Ctrl + Shift + Right arrow[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Move the cursor one word to the right and change the selection
+Shift + Up arrow[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Move the cursor one line up and change the selection
+Shift + Down arrow[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Move the cursor one line down and change the selection
+Double left click[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Selects the entire word that was double clicked on
+Shift + Left click[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Selects everything from where the cursor started to where the mouse clicked
+Shift + Home[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Move the cursor to the beginning of the line and change the selection
+Shift + End[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Move the cursor to the end of the line and change the selection
+
+Text moving:
+Alt + Up arrow[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Move the selected line(s) up by one line, shifting everything else down
+Alt + Down arrow[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Move the selected line(s) down  by one line, shifting everything else up
 
 [H2]Formatted text writer[H2/]
+Button shortcuts:
+Ctrl + 1[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Button 1 (Loading text)
+Ctrl + 2[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Button 2 (New text)
+Ctrl + 3[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Button 3 (Help)
+Ctrl + 4[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Button 4 (Clear text)
+Ctrl + 5[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Button 5 (Copy text)
 
 [H2]Help guide[H2/]
 This is a window that only opens with the "Help" button in the "Formatted text writer" window
 
+Closing the program:
+Escape[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Close the help guide
+Ctrl + W[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Close the help guide
+Ctrl + Shift + W[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Close the program
+
 [H2]Formatted text formatting[H2/]
+Button shortcuts:
+Ctrl + 1[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Button 1 (Clear tags)
+Ctrl + 2[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Button 2 (Update preview)
+Ctrl + 3[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Button 3 (Convert tags and copy)
 
 [H2]Formatted text codes[H2/]
+Button shortcuts:
+Ctrl + 1[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Button 1 (Clear codes)
+Ctrl + 2[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Button 2 (Update preview)
+Ctrl + 3[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Button 3 (Convert codes and copy)
 
 [H2]Formatted text preview[H2/]
-
+Button/checkbox shortcuts:
+Ctrl + 1[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Checkbox 1 (Do formatting)
+Ctrl + 2[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Checkbox 2 (Do text codes)
+Ctrl + 3[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Button 1 (Save text)
+Ctrl + 4[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Button 2 (Save text as)
 """
 
 

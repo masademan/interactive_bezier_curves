@@ -1,0 +1,66 @@
+TEXT_CONTENT_OF_formatted_text_writer_example.txt:
+"""
+Basic example:
+This is some example text!
+
+
+Formatting tag example:
+[RED]This text is red[RED/]
+
+[BOLD]This text is bold[BOLD/]
+
+This text is [SUBSCRIPT]subscripted[SUBSCRIPT/]
+
+
+Text code example:
+[/TEXT_CODE_EXAMPLE]
+
+[/TEXT_CODE_EXAMPLE_2_LINE]
+
+[/TEXT_CODE_EXAMPLE_3_LINE]
+
+[/TEXT_CODE_EXAMPLE_TRIPLE_QUOTES_A]
+
+[/TEXT_CODE_EXAMPLE_TRIPLE_QUOTES_B]
+
+[/TRIPLE_QUOTES_MULTI_LINED]
+"""
+
+
+TAG_CONTENT_OF_formatted_text_writer_example.txt:
+"""
+RED = { foreground: red }
+
+BOLD = { font: (Arial, 11, bold) }
+
+SUBSCRIPT = {
+font: (Arial, 8),
+offset: -3,
+}
+"""
+
+
+CODE_CONTENT_OF_formatted_text_writer_example.txt:
+"""
+TEXT_CODE_EXAMPLE = "This text is using a text code"
+
+TEXT_CODE_EXAMPLE_2_LINE = "This string is split into"\
+" 2 lines using a backslash"
+
+TEXT_CODE_EXAMPLE_3_LINE = "And this string is split into"\
+" 3 lines using a backslash!"\
+" Isn't that cool?"
+
+TEXT_CODE_EXAMPLE_TRIPLE_QUOTES_A = """Check out these cool
+triple quotes!"""
+
+TEXT_CODE_EXAMPLE_TRIPLE_QUOTES_B = """Triple quotes can be used
+on multiple lines
+which is handy for long strings
+but they do add newline chars in between each line
+you can also write ' and " without any problems"""
+
+
+TRIPLE_QUOTES_MULTI_LINED = """You can also use backslashes on"""\
+" triple quotes"
+"""
