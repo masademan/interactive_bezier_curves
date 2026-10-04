@@ -674,9 +674,9 @@ class FormattedTextWriter:
 
             return triple_quotes_seen % 2 == 1, False
 
-        def has_quote_errors(line: str, do_errors: bool) -> tuple[str, bool]:
+        def strip_line_and_check_errors(line: str, do_errors: bool) -> tuple[str, bool]:
             line_chars = []
-            
+
             single_quotes_seen = 0
             double_quotes_seen = 0
             triple_quotes_seen = 0
@@ -685,7 +685,10 @@ class FormattedTextWriter:
 
             line_idx = 0
             while line_idx < len(line):
-                if (single_quotes_seen == 2 or double_quotes_seen == 2 or triple_quotes_seen == 2) and line[line_idx] in ["'", '"']:
+                if (single_quotes_seen == 2 or double_quotes_seen == 2 or triple_quotes_seen == 2) and line[line_idx] in [
+                    "'",
+                    '"',
+                ]:
                     if do_errors:
                         last_important_view_idx = self.current_important_view
                         messagebox.showerror("Text code", f"Line '{line}' is missing a backslash between quotes")
@@ -697,7 +700,7 @@ class FormattedTextWriter:
                     single_quotes_seen += 1
                     just_saw_backslash = False
                 elif line[line_idx] == '"' and single_quotes_seen == 0:
-                    if line[line_idx: line_idx + 3] == '"""' and double_quotes_seen == 0:
+                    if line[line_idx : line_idx + 3] == '"""' and double_quotes_seen == 0:
                         triple_quotes_seen += 1
                         just_saw_backslash = False
                         line_idx += 2
@@ -705,7 +708,9 @@ class FormattedTextWriter:
                         double_quotes_seen += 1
                         just_saw_backslash = False
 
-                if line[line_idx] == "\\":
+                if line[line_idx] == "\\" and (
+                    single_quotes_seen == 2 or double_quotes_seen == 2 or triple_quotes_seen == 2
+                ):
                     if just_saw_backslash:
                         if do_errors:
                             last_important_view_idx = self.current_important_view
@@ -722,12 +727,27 @@ class FormattedTextWriter:
                 if single_quotes_seen == 3 or double_quotes_seen == 3 or triple_quotes_seen == 3:
                     if do_errors:
                         last_important_view_idx = self.current_important_view
-                        messagebox.showerror("Text code", f"Line '{line}' is missing a backslash between quotes")
+                        messagebox.showerror(
+                            "Text code",
+                            f"Line '{line}' is missing a backslash for a quote escape character\nor a backslash between string pieces",
+                        )
                         self.focus_on_window_with_idx(last_important_view_idx)
 
                     return "", True
 
-                if line[line_idx].strip() != "" or single_quotes_seen == 1 or double_quotes_seen == 1 or triple_quotes_seen == 1:
+                if (
+                    line[line_idx].strip() != ""
+                    or single_quotes_seen == 1
+                    or double_quotes_seen == 1
+                    or triple_quotes_seen == 1
+                ):
+                    if (
+                        line_idx < len(line) - 1
+                        and line[line_idx] == "\\"
+                        and line[line_idx + 1] in ['"', "'"]
+                        and (single_quotes_seen == 1 or double_quotes_seen == 1 or triple_quotes_seen == 1)
+                    ):
+                        line_idx += 1
                     line_chars.append(line[line_idx])
 
                 line_idx += 1
@@ -745,7 +765,7 @@ class FormattedTextWriter:
         def make_a_single_string(line: str) -> tuple[str, str]:
             var_name = line.split("=")[0]
             line_pieces = line.split("\\")
-            line_pieces[0] = line_pieces[0][len(var_name) + 1:]
+            line_pieces[0] = line_pieces[0][len(var_name) + 1 :]
             single_string = []
 
             for line_piece in line_pieces:
@@ -788,10 +808,10 @@ class FormattedTextWriter:
         # Get stripped var lines
         stripped_var_lines: list[str] = []
         for var_line in var_lines:
-            stripped_var_line, has_error = has_quote_errors(var_line, do_errors)
+            stripped_var_line, has_error = strip_line_and_check_errors(var_line, do_errors)
             if has_error:
                 return False, {}
-            
+
             stripped_var_lines.append(stripped_var_line)
 
         # Replace single and triple quotes with double quotes and remove backslashes
@@ -1756,10 +1776,6 @@ class FormattedTextWriter:
 
         self.root.destroy()
 
-
-"""
-make shift + end and shift + home shortcut
-"""
 
 if __name__ == "__main__":
     formatted_text_writer = FormattedTextWriter()
