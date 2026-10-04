@@ -69,13 +69,13 @@ def choose_what_to_return(
         return (errors, warnings, formatted_text)
     
     if return_errors and return_formatted_text:
-        return (errors, return_formatted_text)
+        return (errors, formatted_text)
     
     if return_errors and return_warnings:
-        return (errors, return_warnings)
+        return (errors, warnings)
     
     if return_warnings and return_formatted_text:
-        return (return_warnings, return_formatted_text)
+        return (warnings, formatted_text)
     
     if return_errors:
         return errors

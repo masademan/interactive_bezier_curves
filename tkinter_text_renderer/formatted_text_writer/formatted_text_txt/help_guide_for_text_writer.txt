@@ -11,10 +11,14 @@ So for a "BOLD" tag, the opening and closing tags would be written like {OPENING
 
 Text codes are written in the form {TEXT_CODE.format("CODE_NAME_HERE")}, so for a "TAB" code, it would be written like {TEXT_CODE.format("TAB")}.
 
+There are 4 buttons at the top of the window which say "Load text", "Help", "Clear text", and "Copy text".
+
+
 
 [/TAB][H1]Formatting tag area:[H1/]
 [H2]Basics[H2/]
 It has the title "Formatted text formatting" and this is where all the formatting tags are defined.
+
 
 [H2]Formatting tag rules[H2/]
 
@@ -35,6 +39,11 @@ COORD_I = (x[SUBSCRIPT]i[SUBSCRIPT/], y[SUBSCRIPT]i[SUBSCRIPT/])
 So instead of writing the mess of text from earlier, you could just write "[/COORD_I]" to get "[/TRUE_COORD_I]"
 This makes writing formatted text much easier to read and navigate.
 
+There are 3 buttons at the top of the window which say "Clear tags", "Update preview", and "Convert codes and copy"
+Pressing "Clear tags" clears all the text in the window, essentially allowing you to restart clean when writing tags.
+Pressing "Update preview" forces an update on the update window. This is because the tags window doesn't constantly update the preview with changes since you might not be finished with writing a tag.
+Pressing "Convert codes and copy" takes the tags you wrote, turns it into a dict and copies it to your clipboard. This lets you paste it into a Python file as is.
+
 [H2]Text code rules[H2/]
 It's not necessary, but it's recommended to make all the codes in all caps to make them distinct from normal text.
 Make sure there aren't any spaces in the text code name, this can lead to ambiguity in the text code name.
@@ -54,8 +63,20 @@ The code would interpret this as "This sentence is pretty long, so let's break i
 
 Also like regular Python strings, you can also have escape codes, like your usual \\t, \\n, \\\\, etc.
 
+
 [/TAB][H1]Text preview area:[H1/]
 It has the title "Formatted text preview" and this is where the preview of the formatting appears.
+
+Whatever you type in the "Formatted text writer" area is shown here with the formatting tags and text codes changing the text accordingly.
+
+There are 2 checkboxes and 1 button at the top of the window that says "Do formatting", "Do text codes", and "Save text"
+The "Do formatting" checkbox controls whether the formatting tags are used or not. If they are used, you don't see them in the preview and the text gets formatted. If they aren't used, then the tags are just placed into the preview without the formatting on the enclosed text.
+The "Do text codes" checkbox works similarly to the "Do formatting" one, but instead of formatting text, it'll be replaced by its corresponding string. So if it's on, then it'll replace the text codes, otherwise, you'll just see the text codes in the preview.
+Pressing the "Save text" button saves the guide you made in a .txt file. This button will open up a prompt to select which file to save to. You can choose an existing .txt file to overwrite it, like if you loaded the text from a .txt file and you want to save what you have.
+
+
+[/TAB][H1]General info[H1/]
+
 
 [/TAB][H1]Shortcuts:[H1/]
 [H2]Intro[H2/]

@@ -545,7 +545,12 @@ class FormattedTextWriter:
         self.root.clipboard_append(text)
         self.root.update()
 
-    def updated_text_area(self, idx: int, update_preview: bool = True) -> None:
+    def updated_text_area(self, idx: int | None = None, text_area: tk.Text | None = None, update_preview: bool = True) -> None:
+        if idx is None and text_area is None:
+            raise ValueError("Both idx and text_area can't be None at the same time, only one can be None at a time")
+        if idx is not None and text_area is not None:
+            raise ValueError("Both idx and text_area can't be a value at the same time, only one can be an object at a time")
+
         prev_text_content_list = [
             self.prev_text_text_content,
             self.prev_tags_text_content,
@@ -557,6 +562,9 @@ class FormattedTextWriter:
             self.tags_text_area,
             self.codes_text_area,
         ]
+
+        if idx is None:
+            idx = text_area_list.index(text_area)
 
         if prev_text_content_list[idx].get() == self.get_text_area_content(text_area_list[idx]):
             return
@@ -589,6 +597,7 @@ class FormattedTextWriter:
 
         prev_preview_text_area = self.get_text_area_content(self.preview_text_area)
 
+        current_scroll_pos = self.preview_text_area.yview()
         clear_text_area(self.preview_text_area)
         errors, warnings, formatted_text = tkinter_text_tag_formatter(
             text_area=self.preview_text_area,
@@ -604,6 +613,8 @@ class FormattedTextWriter:
             return_warnings=True,
             return_formatted_text=True,
         )
+
+        self.preview_text_area.yview_moveto(current_scroll_pos[0])
 
         self.scroll_to_text_diff(
             self.preview_text_area,
@@ -646,6 +657,7 @@ class FormattedTextWriter:
 
         return new_text[idx - num_char_buffer : idx + 1 + num_char_buffer]
 
+    # Partially AI generated
     def scroll_to_text_diff(self, text_area: tk.Text, changed_text: str) -> None:
         if not changed_text:
             return
@@ -654,23 +666,36 @@ class FormattedTextWriter:
 
         match_idx = text_area.search(changed_text, "1.0", stopindex=tk.END, exact=True)
 
-        text_area.yview(match_idx)
-        
-        text_area.update_idletasks() 
-        
-        line_data = text_area.dlineinfo(match_idx)
-        
-        # if line_data:
-        #     line_height = line_data[3]
-        #     widget_height = text_area.winfo_height()
-            
-        #     visible_units = widget_height // line_height
-            
-        #     text_area.yview_scroll(-(visible_units // 2), "units")
+        if match_idx:
+            # 1. Put it on the screen natively first (prevents the bottom-boundary bug)
+            # text_area.yview(match_idx)
+            text_area.see(match_idx)
+            text_area.update_idletasks()
+
+            # 2. Measure where Tkinter actually put it
+            line_data = text_area.dlineinfo(match_idx)
+
+            if line_data:
+                line_y = line_data[1]  # Current Y position in pixels
+                line_height = line_data[3]  # Height of the line in pixels
+                widget_height = text_area.winfo_height()
+
+                # 3. Calculate the ideal center Y position
+                fraction_to_ideally_place_edit = 1 / 8
+                ideal_center_y = int(widget_height * fraction_to_ideally_place_edit) - (line_height // 2)
+
+                # 4. Find the difference between where it is and where we want it
+                pixel_offset = line_y - ideal_center_y
+
+                # 5. Convert the pixel difference into "units" (lines) and scroll
+                units_to_scroll = pixel_offset // line_height
+
+                if units_to_scroll != 0:
+                    text_area.yview_scroll(units_to_scroll, "units")
 
     def clear_and_update(self, text_area: tk.Text) -> None:
         clear_text_area(text_area)
-        self.update_preview()
+        self.updated_text_area(text_area=text_area)
 
     def reset_prev_text(self) -> None:
         self.prev_text_text_content.set(self.get_text_area_content(self.text_text_area))
@@ -839,6 +864,9 @@ class FormattedTextWriter:
 
         if not widget.tag_ranges("sel"):
             widget.mark_set("anchor", "insert")
+        elif "anchor" not in widget.mark_names():
+            if widget.compare("insert", "==", "sel.first"):
+                widget.mark_set("anchor", "sel.last")
 
         text_before = widget.get("insert linestart", "insert")
 
@@ -870,6 +898,9 @@ class FormattedTextWriter:
 
         if not widget.tag_ranges("sel"):
             widget.mark_set("anchor", "insert")
+        elif "anchor" not in widget.mark_names():
+            if widget.compare("insert", "==", "sel.first"):
+                widget.mark_set("anchor", "sel.last")
 
         text_after = widget.get("insert", "insert lineend")
 
@@ -887,6 +918,293 @@ class FormattedTextWriter:
 
         widget.tag_remove("sel", "1.0", "end")
 
+        if widget.compare("insert", "<", "anchor"):
+            widget.tag_add("sel", "insert", "anchor")
+        elif widget.compare("insert", ">", "anchor"):
+            widget.tag_add("sel", "anchor", "insert")
+
+        widget.see("insert")
+        return "break"
+
+    # AI generated
+    def text_box_shift_left_arrow(self, event: tk.Event) -> str:
+        widget = event.widget
+
+        if not widget.tag_ranges("sel"):
+            widget.mark_set("anchor", "insert")
+        elif "anchor" not in widget.mark_names():
+            if widget.compare("insert", "==", "sel.first"):
+                widget.mark_set("anchor", "sel.last")
+            else:
+                widget.mark_set("anchor", "sel.first")
+
+        if widget.compare("insert", ">", "1.0"):
+            widget.mark_set("insert", "insert - 1 chars")
+
+        widget.tag_remove("sel", "1.0", "end")
+        if widget.compare("insert", "<", "anchor"):
+            widget.tag_add("sel", "insert", "anchor")
+        elif widget.compare("insert", ">", "anchor"):
+            widget.tag_add("sel", "anchor", "insert")
+
+        widget.see("insert")
+        return "break"
+
+    # AI generated
+    def text_box_shift_right_arrow(self, event: tk.Event) -> str:
+        widget = event.widget
+
+        if not widget.tag_ranges("sel"):
+            widget.mark_set("anchor", "insert")
+        elif "anchor" not in widget.mark_names():
+            if widget.compare("insert", "==", "sel.first"):
+                widget.mark_set("anchor", "sel.last")
+            else:
+                widget.mark_set("anchor", "sel.first")
+
+        if widget.compare("insert", "<", "end - 1 chars"):
+            widget.mark_set("insert", "insert + 1 chars")
+
+        widget.tag_remove("sel", "1.0", "end")
+        if widget.compare("insert", "<", "anchor"):
+            widget.tag_add("sel", "insert", "anchor")
+        elif widget.compare("insert", ">", "anchor"):
+            widget.tag_add("sel", "anchor", "insert")
+
+        widget.see("insert")
+        return "break"
+
+    def text_box_left_arrow(self, event: tk.Event) -> str:
+        widget = event.widget
+
+        if not widget.tag_ranges("sel"):
+            if widget.compare("insert", ">", "1.0"):
+                widget.mark_set("insert", "insert - 1 chars")
+        else:
+            widget.mark_set("insert", "sel.first")
+            widget.tag_remove("sel", "1.0", "end")
+
+        widget.see("insert")
+        return "break"
+
+    def text_box_right_arrow(self, event: tk.Event) -> str:
+        widget = event.widget
+
+        if not widget.tag_ranges("sel"):
+            if widget.compare("insert", "<", "end - 1 chars"):
+                widget.mark_set("insert", "insert + 1 chars")
+        else:
+            widget.mark_set("insert", "sel.last")
+            widget.tag_remove("sel", "1.0", "end")
+
+        widget.see("insert")
+        return "break"
+
+    # AI generated
+    def text_box_ctrl_up(self, event: tk.Event) -> str:
+        widget = event.widget
+        widget.yview_scroll(-1, "units")
+        return "break"
+
+    # AI generated
+    def text_box_ctrl_down(self, event: tk.Event) -> str:
+        widget = event.widget
+        widget.yview_scroll(1, "units")
+        return "break"
+
+    # AI generated
+    def text_box_shift_up(self, event: tk.Event) -> str:
+        widget = event.widget
+
+        if not widget.tag_ranges("sel"):
+            widget.mark_set("anchor", "insert")
+        elif "anchor" not in widget.mark_names():
+            if widget.compare("insert", "==", "sel.first"):
+                widget.mark_set("anchor", "sel.last")
+            else:
+                widget.mark_set("anchor", "sel.first")
+
+        current_line = widget.index("insert").split('.')[0]
+        if current_line == "1":
+            widget.mark_set("insert", "1.0")
+        else:
+            widget.mark_set("insert", "insert - 1 displaylines")
+
+        widget.tag_remove("sel", "1.0", "end")
+        if widget.compare("insert", "<", "anchor"):
+            widget.tag_add("sel", "insert", "anchor")
+        elif widget.compare("insert", ">", "anchor"):
+            widget.tag_add("sel", "anchor", "insert")
+
+        widget.see("insert")
+        return "break"
+
+    # AI generated
+    def text_box_shift_down(self, event: tk.Event) -> str:
+        widget = event.widget
+
+        if not widget.tag_ranges("sel"):
+            widget.mark_set("anchor", "insert")
+        elif "anchor" not in widget.mark_names():
+            if widget.compare("insert", "==", "sel.first"):
+                widget.mark_set("anchor", "sel.last")
+            else:
+                widget.mark_set("anchor", "sel.first")
+
+        current_line = widget.index("insert").split('.')[0]
+        last_line = widget.index("end - 1 chars").split('.')[0]
+        
+        if current_line == last_line:
+            widget.mark_set("insert", "end - 1 chars")
+        else:
+            widget.mark_set("insert", "insert + 1 displaylines")
+
+        widget.tag_remove("sel", "1.0", "end")
+        if widget.compare("insert", "<", "anchor"):
+            widget.tag_add("sel", "insert", "anchor")
+        elif widget.compare("insert", ">", "anchor"):
+            widget.tag_add("sel", "anchor", "insert")
+
+        widget.see("insert")
+        return "break"
+
+    # AI generated
+    def text_box_alt_up(self, event: tk.Event) -> str:
+        widget = event.widget
+
+        # 1. Determine which lines are affected (current cursor line or highlighted block)
+        if widget.tag_ranges("sel"):
+            start_index = widget.index("sel.first")
+            end_index = widget.index("sel.last")
+        else:
+            start_index = widget.index("insert")
+            end_index = start_index
+
+        start_line = int(start_index.split('.')[0])
+        end_line = int(end_index.split('.')[0])
+
+        # If a highlight ends exactly at the start of the next line, don't drag that next line up
+        if end_index.split('.')[1] == '0' and end_line > start_line:
+            end_line -= 1
+
+        if start_line <= 1:
+            return "break"  # Already at the top, can't move up
+
+        # 2. Store current cursor and anchor state so we can shift them later
+        has_sel = bool(widget.tag_ranges("sel"))
+        insert_line, insert_col = map(int, widget.index("insert").split('.'))
+        
+        anchor_pos = widget.index("anchor") if "anchor" in widget.mark_names() else None
+        if anchor_pos:
+            anchor_line, anchor_col = map(int, anchor_pos.split('.'))
+
+        # 3. Extract the text blocks to swap
+        swap_start = f"{start_line - 1}.0"
+        swap_end = f"{end_line + 1}.0"
+        
+        line_above = widget.get(swap_start, f"{start_line}.0")
+        block_to_move = widget.get(f"{start_line}.0", swap_end)
+
+        # 4. Perform the swap safely within the Undo stack
+        widget.edit_separator()
+        widget.delete(swap_start, swap_end)
+        widget.insert(swap_start, block_to_move + line_above)
+        widget.edit_separator()
+
+        # 5. Restore cursor and selection (shifted up by 1 line)
+        widget.mark_set("insert", f"{insert_line - 1}.{insert_col}")
+        if anchor_pos:
+            widget.mark_set("anchor", f"{anchor_line - 1}.{anchor_col}")
+
+        if has_sel and anchor_pos:
+            widget.tag_remove("sel", "1.0", "end")
+            if widget.compare("insert", "<", "anchor"):
+                widget.tag_add("sel", "insert", "anchor")
+            elif widget.compare("insert", ">", "anchor"):
+                widget.tag_add("sel", "anchor", "insert")
+
+        widget.see("insert")
+        return "break"
+
+    # AI generated
+    def text_box_alt_down(self, event: tk.Event) -> str:
+        widget = event.widget
+
+        if widget.tag_ranges("sel"):
+            start_index = widget.index("sel.first")
+            end_index = widget.index("sel.last")
+        else:
+            start_index = widget.index("insert")
+            end_index = start_index
+
+        start_line = int(start_index.split('.')[0])
+        end_line = int(end_index.split('.')[0])
+
+        if end_index.split('.')[1] == '0' and end_line > start_line:
+            end_line -= 1
+
+        # Tkinter's absolute "end" is technically an empty phantom line past your real text.
+        # We need to find the last *actual* line of text to prevent dragging text off the bottom.
+        last_actual_line = int(widget.index("end - 1 chars").split('.')[0])
+        if end_line >= last_actual_line:
+            return "break"  # Already at the bottom, can't move down
+
+        has_sel = bool(widget.tag_ranges("sel"))
+        insert_line, insert_col = map(int, widget.index("insert").split('.'))
+        
+        anchor_pos = widget.index("anchor") if "anchor" in widget.mark_names() else None
+        if anchor_pos:
+            anchor_line, anchor_col = map(int, anchor_pos.split('.'))
+
+        swap_start = f"{start_line}.0"
+        swap_end = f"{end_line + 2}.0"
+        
+        block_to_move = widget.get(swap_start, f"{end_line + 1}.0")
+        line_below = widget.get(f"{end_line + 1}.0", swap_end)
+
+        widget.edit_separator()
+        widget.delete(swap_start, swap_end)
+        widget.insert(swap_start, line_below + block_to_move)
+        widget.edit_separator()
+
+        # Restore cursor and selection (shifted down by 1 line)
+        widget.mark_set("insert", f"{insert_line + 1}.{insert_col}")
+        if anchor_pos:
+            widget.mark_set("anchor", f"{anchor_line + 1}.{anchor_col}")
+
+        if has_sel and anchor_pos:
+            widget.tag_remove("sel", "1.0", "end")
+            if widget.compare("insert", "<", "anchor"):
+                widget.tag_add("sel", "insert", "anchor")
+            elif widget.compare("insert", ">", "anchor"):
+                widget.tag_add("sel", "anchor", "insert")
+
+        widget.see("insert")
+        return "break"
+
+    # AI generated
+    def text_box_left_click(self, event: tk.Event) -> str:
+        widget = event.widget
+        click_index = widget.index(f"@{event.x},{event.y}")
+
+        widget.tag_remove("sel", "1.0", "end")
+        widget.mark_set("insert", click_index)
+        widget.mark_set("anchor", click_index)
+
+        widget.focus_set()
+        return "break"
+
+    # AI generated
+    def text_box_left_click_drag(self, event: tk.Event) -> str:
+        widget = event.widget
+
+        if "anchor" not in widget.mark_names():
+            widget.mark_set("anchor", "insert")
+
+        drag_index = widget.index(f"@{event.x},{event.y}")
+        widget.mark_set("insert", drag_index)
+
+        widget.tag_remove("sel", "1.0", "end")
         if widget.compare("insert", "<", "anchor"):
             widget.tag_add("sel", "insert", "anchor")
         elif widget.compare("insert", ">", "anchor"):
@@ -935,6 +1253,9 @@ class FormattedTextWriter:
         if not widget.tag_ranges("sel"):
             current_index = widget.index("insert")
             widget.mark_set("anchor", current_index)
+        elif "anchor" not in widget.mark_names():
+            if widget.compare("insert", "==", "sel.first"):
+                widget.mark_set("anchor", "sel.last")
 
         click_index = widget.index(f"@{event.x},{event.y}")
 
@@ -978,10 +1299,21 @@ class FormattedTextWriter:
         text_area.bind("<Control-BackSpace>", self.text_box_ctrl_backspace)
         text_area.bind("<Control-Delete>", self.text_box_ctrl_delete)
 
+        text_area.bind("<Left>", self.text_box_left_arrow)
+        text_area.bind("<Right>", self.text_box_right_arrow)
         text_area.bind("<Control-Left>", self.text_box_ctrl_left_arrow)
         text_area.bind("<Control-Right>", self.text_box_ctrl_right_arrow)
         text_area.bind("<Control-Shift-Left>", self.text_box_ctrl_shift_left_arrow)
         text_area.bind("<Control-Shift-Right>", self.text_box_ctrl_shift_right_arrow)
+
+        text_area.bind("<Control-Shift-Up>", self.text_box_shift_up)
+        text_area.bind("<Control-Shift-Down>", self.text_box_shift_down)
+        text_area.bind("<Shift-Up>", self.text_box_shift_up)
+        text_area.bind("<Shift-Down>", self.text_box_shift_down)
+        text_area.bind("<Control-Up>", self.text_box_ctrl_up)
+        text_area.bind("<Control-Down>", self.text_box_ctrl_down)
+        text_area.bind("<Alt-Up>", self.text_box_alt_up)
+        text_area.bind("<Alt-Down>", self.text_box_alt_down)
 
         text_area.bind("<Double-Button-1>", self.text_box_double_click)
 
@@ -990,6 +1322,12 @@ class FormattedTextWriter:
         text_area._default_insertofftime = text_area.cget("insertofftime")
         text_area._blink_timer = None
         text_area.bind("<Key>", self.keep_cursor_solid)
+
+        text_area.bind("<Shift-Left>", self.text_box_shift_left_arrow)
+        text_area.bind("<Shift-Right>", self.text_box_shift_right_arrow)
+
+        text_area.bind("Button-1>", self.text_box_left_click)
+        text_area.bind("<B1-Motion>", self.text_box_left_click_drag)
 
     def get_text_area_content(self, text_area: tk.Text) -> str:
         return text_area.get("1.0", "end-1c")
