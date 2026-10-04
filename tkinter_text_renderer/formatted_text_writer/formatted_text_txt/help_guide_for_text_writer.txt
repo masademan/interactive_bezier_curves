@@ -24,6 +24,7 @@ There are 5 buttons at the top of the window which say "Load text", "New text", 
 4. Pressing the "Clear text" button clears the text in this window. This action is able to be undone using Ctrl + Z.
 5. Pressing the "Copy text" button turns it into a valid Python string, which you can then paste into a triple quoted string. Do note that the copied text doesn't include the quotes, but only the text that goes inside the quotes.
 
+
 [/TAB][H1]Formatting tag area:[H1/]
 [H2]Basics[H2/]
 It has the title "Formatted text formatting" and this is where all the formatting tags are defined.
@@ -44,6 +45,16 @@ There are 3 buttons at the top of the window which say "Clear tags", "Update pre
 3. Pressing "Convert tags and copy" takes the tags you wrote, turns it into a dict and copies it to your clipboard. This lets you paste it into a Python file as is.
 
 [H2]Formatting tag rules[H2/]
+It's not necessary, but it's recommended to make all the tags in all caps to make them distinct from normal text.
+Make sure there aren't any spaces in the tag name, this can lead to ambiguity in the tag name.
+Again, these tags should be written like normal variables in Python.
+
+Once you write the tag name, you can have any number of spaces, an equals sign, any number of spaces, and then a dictionary of values to change. Just like in Python, you can write all the parts of the dictionary in one line or split it into multiple lines. The keys of the dictionary should be the names of the tkinter Text attributes that can be edited through tags
+Here's a list to all the attributes that can be edited (not clickable):
+[HYPERLINK]https://www.tcl-lang.org/man/tcl8.5/TkCmd/text.htm#M26:~:text=non%2Delided%20index.-,TAGS,-The%20first%20form[HYPERLINK/]
+
+You don't have to necessarily use quote marks to signify something is a string in the dictionary. If it's made up of numbers, it's assumed to be a float or integer (depending on whether or not there's a decimal point). If it's "True" or "False" (case insensitive), it'll assume it's a boolean. If it has parentheses, it's assumed to be a tuple. Otherwise, it's a string. You can explicitly make something a string by using quotes, double or single. If using strings, the definition of strings works the same as Python strings. Triple quotes, single quote in double quoted strings, double quote in single quoted strings, backslashes to split a string along different lines, and escape characters (\\, \n, \t, etc.) work.
+
 
 [/TAB][H1]Text code area:[H1/]
 [H2]Basics[H2/]
@@ -102,13 +113,29 @@ There are 2 checkboxes and 2 button at the top of the window that says "Do forma
 
 
 [/TAB][H1]General info[H1/]
+When opening the program for the first time, there should be example text in each text input window to show what to make the format look like.
 
 
 [/TAB][H1]Shortcuts:[H1/]
 [H2]Intro[H2/]
 Each sub-heading in this chapter will be the domain where the following shortcuts work. So a sub-heading that says "Formatted text writer", then the following shortcuts only work on the "Formatted text writer" window.
 
-[H2]All windows[H2/]
+[H2]All windows (except the help guide)[H2/]
+Closing the program:
+Escape[/TRUE_TAB][/TRUE_TAB]- Close the program
+Ctrl + W[/TRUE_TAB][/TRUE_TAB]- Close the program
+Ctrl + Shift + W[/TRUE_TAB][/TRUE_TAB]- Close the program
+
+Project/file management:
+Ctrl + O[/TRUE_TAB][/TRUE_TAB]- Open a .txt file
+Ctrl + S[/TRUE_TAB][/TRUE_TAB]- Save to .txt filee
+Ctrl + Shift + S[/TRUE_TAB][/TRUE_TAB]- Save as .txt file
+Ctrl + N[/TRUE_TAB][/TRUE_TAB]- Create new formatted text project
+
+Window management:
+Ctrl + Page Down[/TRUE_TAB][/TRUE_TAB]- Cycle between the windows (Order: Main, Tags, Codes, Preview, repeat)
+Ctrl + Page Up[/TRUE_TAB][/TRUE_TAB]- Cycle between the windows (Order: Preview, Codes, Tags, Main, repeat)
+Ctrl + Q[/TRUE_TAB][/TRUE_TAB]- Bring all the windows to the top and visible
 
 [H2]Formatted text writer[H2/]
 
@@ -136,12 +163,19 @@ BOLD = { font: (Arial, 11, bold) }
 H1 = { font: (Arial, 15, bold) }
 
 H2 = { font: (Arial, 13, bold) }
+
+HYPERLINK = {
+foreground: blue,
+underline: True,
+}
 """
 
 
 CODE_CONTENT_OF_help_guide_for_text_writer.txt:
 """
 TAB = "     "
+
+TRUE_TAB = "\t"
 
 TRUE_COORD_I = "(x[SUBSCRIPT]i[SUBSCRIPT/], y[SUBSCRIPT]i[SUBSCRIPT/])"
 """

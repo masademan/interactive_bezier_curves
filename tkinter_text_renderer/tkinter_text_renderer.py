@@ -196,7 +196,7 @@ def tkinter_text_tag_formatter(
         else:
             text_area.config(state=text_area_state)
             warnings, formatted_text = tkinter_text_tag_formatter(
-                text_area, tagged_text, text_codes=text_codes, return_warnings=True, return_formatted_text=True
+                text_area, tagged_and_coded_text, text_codes=text_codes, return_warnings=True, return_formatted_text=True
             )
             return choose_what_to_return(
                 formatting_error_tags, warnings, formatted_text, return_errors, return_warnings, return_formatted_text

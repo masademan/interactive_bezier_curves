@@ -18,6 +18,9 @@ from tkinter_text_renderer.tkinter_text_renderer import (
     tkinter_text_tag_formatter,
 )
 
+# AI generated code is labeled with the comment "AI generated" before it
+# If it was only partially AI generated, the comment will be "Partially AI generated"
+
 HELP_GUIDE_FOR_TEXT_WRITER = f""""""
 TAGS_FOR_HELP_GUIDE = {
     "TRUE_SUBSCRIPT": {
@@ -33,9 +36,14 @@ TAGS_FOR_HELP_GUIDE = {
     "H2": {
         "font": ("Arial", 13, "bold"),
     },
+    "HYPERLINK": {
+        "foreground": "blue",
+        "underline": True,
+    },
 }
 CODES_FOR_HELP_GUIDE = {
     "TAB": "    ",
+    "TRUE_TAB": "\t",
     "TRUE_COORD_I": "(x[TRUE_SUBSCRIPT]i[TRUE_SUBSCRIPT/], y[TRUE_SUBSCRIPT]i[TRUE_SUBSCRIPT/])",
 }
 
@@ -192,7 +200,9 @@ class FormattedTextWriter:
 
         self.tags_window.bind("<Control-Key-1>", lambda _event: self.clear_and_update(self.tags_text_area))
         self.tags_window.bind("<Control-Key-2>", lambda _event: self.update_preview())
-        self.tags_window.bind("<Control-Key-3>", lambda _event: self.copy_txt_to_clipboard(str(self.read_tags(force_read=True))))
+        self.tags_window.bind(
+            "<Control-Key-3>", lambda _event: self.copy_txt_to_clipboard(str(self.read_tags(force_read=True)))
+        )
 
         self.tags_window.update_idletasks()
         self.tags_window.focus_force()
@@ -247,7 +257,9 @@ class FormattedTextWriter:
 
         self.codes_window.bind("<Control-Key-1>", lambda _event: self.clear_and_update(self.codes_text_area))
         self.codes_window.bind("<Control-Key-2>", lambda _event: self.update_preview())
-        self.codes_window.bind("<Control-Key-3>", lambda _event: self.copy_txt_to_clipboard(str(self.read_codes(force_read=True))))
+        self.codes_window.bind(
+            "<Control-Key-3>", lambda _event: self.copy_txt_to_clipboard(str(self.read_codes(force_read=True)))
+        )
 
         self.codes_window.update_idletasks()
         self.codes_window.focus_force()
@@ -402,6 +414,12 @@ class FormattedTextWriter:
 
         if not file_path:
             self.focus_on_window_with_idx(last_important_view_idx)
+            self.update_preview()
+            self.saved_text_progress = True
+            self.text_file_path = None
+            for window in self.window_list:
+                if window.title().endswith("*"):
+                    window.title(window.title()[:-1])
             return
 
         content_lines = []
@@ -459,8 +477,6 @@ class FormattedTextWriter:
                 window.title(window.title()[:-1])
 
         self.preview_text_area.yview("1.0")
-
-        messagebox.showinfo("File loading", "File loaded successfully!")
 
         self.focus_on_window_with_idx(last_important_view_idx)
 
@@ -592,6 +608,10 @@ class FormattedTextWriter:
             "H2": {
                 "font": ("Arial", 13, "bold"),
             },
+            "HYPERLINK": {
+                "foreground": "blue",
+                "underline": True,
+            },
         }
 
     def read_codes(self, force_read: bool = False) -> dict[str, str]:  # TODO
@@ -628,6 +648,7 @@ class FormattedTextWriter:
 
         return {
             "TAB": "    ",
+            "TRUE_TAB": "\t",
             "TRUE_COORD_I": "(x[TRUE_SUBSCRIPT]i[TRUE_SUBSCRIPT/], y[TRUE_SUBSCRIPT]i[TRUE_SUBSCRIPT/])",
         }
 
@@ -737,9 +758,25 @@ class FormattedTextWriter:
 
         return -1
 
-    def get_text_diff_plus_buffer(self, prev_text: str, new_text: str, start_num_char_buffer: int = 25, increasing_mode: Literal["geometric", "arithmetic"] = "arithmetic", increase_amount: int = 10) -> str:
+    def get_text_diff_plus_buffer(
+        self,
+        prev_text: str,
+        new_text: str,
+        start_num_char_buffer: int = 25,
+        increasing_mode: Literal["geometric", "arithmetic"] = "arithmetic",
+        increase_amount: int = 10,
+    ) -> str:
         if start_num_char_buffer < 0:
             raise ValueError("start_num_char_buffer CANNOT be less than 0")
+
+        if increasing_mode == "arithmetic" and increase_amount <= 0:
+            raise ValueError('increase_amount CANNOT be less than or equal to 0 in "arithmetic" mode')
+
+        if increasing_mode == "geometric" and increase_amount <= 1:
+            raise ValueError('increase_amount CANNOT be less than or equal to 1 in "geometric" mode')
+
+        if int(increase_amount) != increase_amount:
+            raise ValueError("increase_amount has to be an int")
 
         idx = self.find_text_diff_idx(prev_text, new_text)
 
@@ -748,57 +785,76 @@ class FormattedTextWriter:
 
         num_char_buffer = start_num_char_buffer
 
-        text_diff = new_text[idx - num_char_buffer : idx + 1 + num_char_buffer]
+        def splice_text(text: str, idx: int, buffer: int):
+            if buffer <= idx <= len(text) - buffer - 1:
+                return text[idx - buffer : idx + 1 + buffer]
+
+            if idx < buffer:
+                return text[: 2 * buffer + 1]
+
+            return text[len(text) - (2 * buffer + 1) :]
+
+        text_diff = splice_text(new_text, idx, num_char_buffer)
         while len(find_all_occurrences(new_text, text_diff)) > 1:
             if increasing_mode == "geometric":
                 num_char_buffer *= increase_amount
             elif increasing_mode == "arithmetic":
                 num_char_buffer += increase_amount
             else:
-                raise ValueError("increasing_mode has to be either \"geometric\" or \"arithmetic\"")
+                raise ValueError('increasing_mode has to be either "geometric" or "arithmetic"')
 
-            text_diff = new_text[idx - num_char_buffer : idx + 1 + num_char_buffer]
+            text_diff = splice_text(new_text, idx, num_char_buffer)
 
         return text_diff
 
-    # Partially AI generated
+    # AI generated (lots of debugging and going back and forth)
     def scroll_to_text_diff(self, text_area: tk.Text, changed_text: str, top_idx: str) -> None:
         if not changed_text:
             return
 
+        # 1. Set the internal scroll state, but DO NOT call update_idletasks().
+        # This keeps the view in memory without flashing it to the user's monitor.
         text_area.yview(top_idx)
-
-        text_area.update_idletasks()
-
+        
         match_idx = text_area.search(changed_text, "1.0", stopindex=tk.END, exact=True)
+        if not match_idx:
+            return
 
-        if match_idx:
-            # 1. Put it on the screen natively first (prevents the bottom-boundary bug)
-            # text_area.yview(match_idx)
-            text_area.see(match_idx)
-            text_area.update_idletasks()
+        # Calculate the exact index where the changed text ends
+        match_end_idx = f"{match_idx}+{len(changed_text)}c"
+        
+        widget_height = text_area.winfo_height()
 
-            # 2. Measure where Tkinter actually put it
-            line_data = text_area.dlineinfo(match_idx)
-
-            if line_data:
-                line_y = line_data[1]  # Current Y position in pixels
-                line_height = line_data[3]  # Height of the line in pixels
-                widget_height = text_area.winfo_height()
-
-                # 3. Calculate the ideal center Y position
-                fraction_to_ideally_place_edit = 1 / 8
-                ideal_center_y = int(widget_height * fraction_to_ideally_place_edit) - (line_height // 2)
-
-                # 4. Find the difference between where it is and where we want it
-                pixel_offset = line_y - ideal_center_y
-
-                # 5. Convert the pixel difference into "units" (lines) and scroll
-                units_to_scroll = pixel_offset // line_height
-
-                if units_to_scroll != 0:
-
-                    text_area.yview_scroll(units_to_scroll, "units")
+        # The internal text_area.index("@...") queries will natively force 
+        # geometry updates for these specific coordinates without drawing them.
+        top_screen_idx = text_area.index("@0,0")
+        bottom_screen_idx = text_area.index(f"@0,{widget_height}")
+        
+        # 3. Add the "update" flag. 
+        # This explicitly tells Tkinter's C-backend to mathematically calculate 
+        # text wrapping right now, without updating the visual display.
+        visible_dl = text_area.count(top_screen_idx, bottom_screen_idx, "update", "displaylines")
+        max_visible_lines = visible_dl if visible_dl else 1
+        
+        # Check how many lines exist between the END of the edit and the end of the document
+        lines_to_end = text_area.count(match_end_idx, "end-1c", "update", "displaylines")
+        lines_below_edit = lines_to_end if lines_to_end else 0
+        
+        # 4. Bulletproof Bottom Pinning
+        if lines_below_edit < max_visible_lines:
+            text_area.yview_moveto(1.0)
+            return
+            
+        # 5. One-Shot Mathematical Placement
+        text_area.yview(match_idx) 
+        
+        fraction_to_ideally_place_edit = 1 / 8
+        ideal_center_y = int(widget_height * fraction_to_ideally_place_edit)
+        
+        try:
+            text_area.yview_scroll(-ideal_center_y, "pixels")
+        except tk.TclError:
+            text_area.yview_scroll(-2, "units")
 
     def clear_and_update(self, text_area: tk.Text) -> None:
         clear_text_area(text_area)
@@ -1528,27 +1584,25 @@ class FormattedTextWriter:
         self.root.mainloop()
 
     def quit(self, _event=None) -> None:
+        last_important_view_idx = self.current_important_view
+
         if not self.saved_text_progress:
             response = messagebox.askyesno("Unsaved work", "You still have unsaved work! Are you sure you want to quit now?")
 
             if not response:
-                messagebox.showinfo(
-                    "Unsaved work",
-                    "The quit has been canceled, you can now save your progress",
-                )
+                self.focus_on_window_with_idx(last_important_view_idx)
                 return
 
         self.root.destroy()
 
     def full_quit(self, _event=None) -> None:
+        last_important_view_idx = self.current_important_view
+
         if not self.saved_text_progress:
             response = messagebox.askyesno("Unsaved work", "You still have unsaved work! Are you sure you want to quit now?")
 
             if not response:
-                messagebox.showinfo(
-                    "Unsaved work",
-                    "The quit has been canceled, you can now save your progress",
-                )
+                self.focus_on_window_with_idx(last_important_view_idx)
                 return
 
         self.root.destroy()
