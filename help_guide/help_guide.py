@@ -1,3 +1,5 @@
+from typing import Literal, Any
+
 HELP_SECTIONS = [
     "Quick start",
     "Help guides",
@@ -10,24 +12,50 @@ HELP_SECTIONS = [
     "Usage",
 ]
 
-tags = {
-    "SUBSCRIPT": {
-        "font": ("Arial", 8),
-        "offset": -3,
+HELP_GUIDE_SELECTION: dict[str, dict[Literal["text", "tags", "codes"], str | dict[str, Any]]] = {
+    "Quick start": {
+        "text": """""",
+        "tags": {},
+        "codes": {},
     },
-    "BOLD": {
-        "font": ("Arial", 11, "bold"),
+    "Help guides": {
+        "text": """""",
+        "tags": {},
+        "codes": {},
+    },
+    "Grid settings": {
+        "text": """""",
+        "tags": {},
+        "codes": {},
+    },
+    "Control point settings": {
+        "text": """""",
+        "tags": {},
+        "codes": {},
+    },
+    "Control point position window": {
+        "text": """""",
+        "tags": {},
+        "codes": {},
+    },
+    "Bezier curve settings": {
+        "text": """""",
+        "tags": {},
+        "codes": {},
+    },
+    "Controls": {
+        "text": """""",
+        "tags": {},
+        "codes": {},
+    },
+    "Shortcuts": {
+        "text": """""",
+        "tags": {},
+        "codes": {},
+    },
+    "Usage": {
+        "text": """""",
+        "tags": {},
+        "codes": {},
     },
 }
-
-
-if __name__ == "__main__":
-    pass
-
-
-"""
-Write the help guides
-    Make a window to make writing the guides easier
-    Make a tk.Text that you can edit, with a toplevel including some controls,
-      like a checkbox to show formatting or not, and a way to save the text writting in a .txt
-"""

@@ -53,7 +53,7 @@ Once you write the tag name, you can have any number of spaces, an equals sign, 
 Here's a list to all the attributes that can be edited (not clickable):
 [HYPERLINK]https://www.tcl-lang.org/man/tcl8.5/TkCmd/text.htm#M26:~:text=non%2Delided%20index.-,TAGS,-The%20first%20form[HYPERLINK/]
 
-You don't have to necessarily use quote marks to signify something is a string in the dictionary. If it's made up of numbers, it's assumed to be a float or integer (depending on whether or not there's a decimal point). If it's "True" or "False" (case insensitive), it'll assume it's a boolean. If it has parentheses, it's assumed to be a tuple. Otherwise, it's a string. You can explicitly make something a string by using quotes, double or single. If using strings, the definition of strings works the same as Python strings. Triple quotes, single quote in double quoted strings, double quote in single quoted strings, backslashes to split a string along different lines, and escape characters (\\, \n, \t, etc.) work.
+You don't have to necessarily use quote marks to signify something is a string in the dictionary. If it's made up of numbers, it's assumed to be a float or integer (depending on whether or not there's a decimal point). If it's "True" or "False" (case insensitive), it'll assume it's a boolean. If it has parentheses, it's assumed to be a tuple. Otherwise, it's a string. You can explicitly make something a string by using quotes, double or single. If using strings, the definition of strings works the same as Python strings. Triple quotes, single quote in double quoted strings, double quote in single quoted strings, backslashes to split a string along different lines, and escape characters (\\, \n, \t, \', and \") work. Though you can just type \ instead of \\ as long as the next character isn't one belonging to the escape characters, because you might get accidental escape characters you didn't mean for.
 
 
 [/TAB][H1]Text code area:[H1/]
@@ -95,7 +95,7 @@ LONG_THING = "This sentence is pretty long" \
 
 The code would interpret this as "This sentence is pretty long, so let's break it into 2 lines" with no newline characters added.
 
-Also like regular Python strings, you can also have escape codes, like your usual \t, \n, \\, etc.
+Also like regular Python strings, you can also have escape codes, like your usual \t, \n, \\, \', and \". You can also just type \ instead of \\ as long as the next character isn't part of the escape characters, because you might get accidental escape characters you didn't mean for.
 
 
 [/TAB][H1]Text preview area:[H1/]
@@ -241,5 +241,5 @@ TAB = "     "
 
 TRUE_TAB = "\t"
 
-TRUE_COORD_I = "(x[SUBSCRIPT]i[SUBSCRIPT/], y[SUBSCRIPT]i[SUBSCRIPT/])"
+TRUE_COORD_I = "(x[TRUE_SUBSCRIPT]i[TRUE_SUBSCRIPT/], y[TRUE_SUBSCRIPT]i[TRUE_SUBSCRIPT/])"
 """

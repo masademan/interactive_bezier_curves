@@ -22,30 +22,8 @@ from tkinter_text_renderer.tkinter_text_renderer import (
 # If it was only partially AI generated, the comment will be "Partially AI generated"
 
 HELP_GUIDE_FOR_TEXT_WRITER = f""""""
-TAGS_FOR_HELP_GUIDE = {
-    "TRUE_SUBSCRIPT": {
-        "font": ("Arial", 8),
-        "offset": -3,
-    },
-    "BOLD": {
-        "font": ("Arial", 11, "bold"),
-    },
-    "H1": {
-        "font": ("Arial", 15, "bold"),
-    },
-    "H2": {
-        "font": ("Arial", 13, "bold"),
-    },
-    "HYPERLINK": {
-        "foreground": "blue",
-        "underline": True,
-    },
-}
-CODES_FOR_HELP_GUIDE = {
-    "TAB": "    ",
-    "TRUE_TAB": "\t",
-    "TRUE_COORD_I": "(x[TRUE_SUBSCRIPT]i[TRUE_SUBSCRIPT/], y[TRUE_SUBSCRIPT]i[TRUE_SUBSCRIPT/])",
-}
+TAGS_FOR_HELP_GUIDE = {}
+CODES_FOR_HELP_GUIDE = {}
 
 USE_EXAMPLES = False
 
@@ -587,6 +565,8 @@ class FormattedTextWriter:
         full list:
         string, ints, floats, booleans, tuples
 
+        make an error if the variable name is not implicitly or explicitly a string
+
         make everything into 1 line and remove all the spaces
         find all the key value pairs in the main dict, then parse each dict individually
 
@@ -650,6 +630,36 @@ class FormattedTextWriter:
 
             return equal_idx < single_quote_idx or equal_idx < double_quote_idx
 
+        def is_valid_var_name(var_name: str) -> bool:
+            # Check the beginning
+            if var_name[0].upper() not in "ABCDEFGHIJKLMNOPQRSTUVWXYZ_":
+                if do_errors:
+                    last_important_view_idx = self.current_important_view
+                    messagebox.showerror("Text code", f"Var name '{var_name}' is invalid because it starts with '{var_name[0]}'")
+                    self.focus_on_window_with_idx(last_important_view_idx)
+
+                return False
+
+            # Check the entire name
+            for char in var_name:
+                if char == " ":
+                    if do_errors:
+                        last_important_view_idx = self.current_important_view
+                        messagebox.showerror("Text code", f"Var name '{var_name}' is invalid because it contains space(s)")
+                        self.focus_on_window_with_idx(last_important_view_idx)
+
+                    return False
+                
+                if char.upper() not in "ABCDEFGHIJKLMNOPQRSTUVWXYZ_0123456789":
+                    if do_errors:
+                        last_important_view_idx = self.current_important_view
+                        messagebox.showerror("Text code", f"Var name '{var_name}' is invalid because it contains '{char}'")
+                        self.focus_on_window_with_idx(last_important_view_idx)
+
+                    return False
+
+            return True
+
         def toggle_using_triple_quotes(line: str, do_errors: bool) -> tuple[bool, bool]:
             line_idx = 0
             triple_quotes_seen = 0
@@ -685,10 +695,10 @@ class FormattedTextWriter:
 
             line_idx = 0
             while line_idx < len(line):
-                if (single_quotes_seen == 2 or double_quotes_seen == 2 or triple_quotes_seen == 2) and line[line_idx] in [
-                    "'",
-                    '"',
-                ]:
+                if (
+                    (single_quotes_seen == 2 or double_quotes_seen == 2 or triple_quotes_seen == 2)
+                    and line[line_idx] in ["'", '"']
+                ):
                     if do_errors:
                         last_important_view_idx = self.current_important_view
                         messagebox.showerror("Text code", f"Line '{line}' is missing a backslash between quotes")
@@ -741,14 +751,25 @@ class FormattedTextWriter:
                     or double_quotes_seen == 1
                     or triple_quotes_seen == 1
                 ):
+                    special_escape = {
+                        "n": "\n",
+                        "t": "\t",
+                        "\\": "\\\\",
+                    }
                     if (
                         line_idx < len(line) - 1
                         and line[line_idx] == "\\"
-                        and line[line_idx + 1] in ['"', "'"]
                         and (single_quotes_seen == 1 or double_quotes_seen == 1 or triple_quotes_seen == 1)
                     ):
-                        line_idx += 1
-                    line_chars.append(line[line_idx])
+                        if line[line_idx + 1] in ['"', "'"] + list(special_escape.keys()):
+                            line_idx += 1
+                            line_chars.append(
+                                special_escape.get(line[line_idx], line[line_idx])
+                            )
+                        else:
+                            line_chars.append("\\\\")
+                    else:
+                        line_chars.append(line[line_idx])
 
                 line_idx += 1
 
@@ -769,7 +790,9 @@ class FormattedTextWriter:
             single_string = []
 
             for line_piece in line_pieces:
-                if line_piece[0] == "'":
+                if len(line_piece) == 0:
+                    single_string.append("\\")
+                elif line_piece[0] == "'":
                     single_string.append(line_piece[1:-1])
                 elif line_piece[:3] == '"""':
                     single_string.append(line_piece[3:-3])
@@ -791,6 +814,9 @@ class FormattedTextWriter:
         using_triple_quotes = False
         for naive_line in naive_lines:
             if is_var_declaration_line(naive_line):
+                if not is_valid_var_name(naive_line.split("=")[0].strip()):
+                    return False, {}
+                
                 var_lines.append(naive_line)
                 var_line_idx += 1
             else:
