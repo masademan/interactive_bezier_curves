@@ -34,6 +34,97 @@ EXAMPLE_TAGS = """"""
 EXAMPLE_CODES = """"""
 
 
+# Helper funcs
+def is_valid_var_name(
+    self: FormattedTextWriter,
+    var_name: str,
+    do_errors: bool,
+    var_type: Literal["Text code", "Formatting tag"],
+    type_name: str = "Var name",
+) -> bool:
+    if var_type not in ["Text code", "Formatting tag"]:
+        raise ValueError(f"var_type must be either 'Text code' or 'Formatting tag', not '{var_type}'")
+
+    # Check the beginning
+    if var_name[0].upper() not in "ABCDEFGHIJKLMNOPQRSTUVWXYZ_":
+        if do_errors:
+            last_important_view_idx = self.current_important_view
+            messagebox.showerror(var_type, f"{type_name} '{var_name}' is invalid because it starts with '{var_name[0]}'")
+            self.focus_on_window_with_idx(last_important_view_idx)
+
+        return False
+
+    # Check the entire name
+    for char in var_name:
+        if char == " ":
+            if do_errors:
+                last_important_view_idx = self.current_important_view
+                messagebox.showerror(var_type, f"{type_name} '{var_name}' is invalid because it contains space(s)")
+                self.focus_on_window_with_idx(last_important_view_idx)
+
+            return False
+
+        if char.upper() not in "ABCDEFGHIJKLMNOPQRSTUVWXYZ_0123456789":
+            if do_errors:
+                last_important_view_idx = self.current_important_view
+                messagebox.showerror(var_type, f"{type_name} '{var_name}' is invalid because it contains '{char}'")
+                self.focus_on_window_with_idx(last_important_view_idx)
+
+            return False
+
+    return True
+
+
+def toggle_using_triple_quotes(
+    self: FormattedTextWriter, line: str, do_errors: bool, var_type: Literal["Text code", "Formatting tag"]
+) -> tuple[bool, bool]:
+    if var_type not in ["Text code", "Formatting tag"]:
+        raise ValueError(f"var_type must be either 'Text code' or 'Formatting tag', not '{var_type}'")
+
+    line_idx = 0
+    triple_quotes_seen = 0
+
+    while line_idx < len(line):
+        if line[line_idx : line_idx + 3] == '"""':
+            triple_quotes_seen += 1
+            line_idx += 2
+
+        if line[line_idx] == "\\":
+            triple_quotes_seen = 0
+
+        if triple_quotes_seen == 3:
+            if do_errors:
+                last_important_view_idx = self.current_important_view
+                messagebox.showerror(var_type, f"Line '{line}' has invalid triple quote usage")
+                self.focus_on_window_with_idx(last_important_view_idx)
+
+            return False, True
+
+        line_idx += 1
+
+    return triple_quotes_seen % 2 == 1, False
+
+
+def make_a_single_string(line: str, cut_ends: bool = True) -> tuple[str, str]:
+    var_name = line.split("=")[0]
+    cut_line = line[len(var_name) + 2 : -1] if cut_ends else line[len(var_name) + 1 :]
+    line_pieces = cut_line.split('"\\"')
+    return var_name, "".join(line_pieces)
+
+
+def parse_number(num_str: str) -> int | float:
+    pass
+
+def parse_tuple(tuple_str: str) -> tuple[Any, ...]:
+    pass
+
+def parse_boolean(bool_str: str) -> bool:
+    pass
+
+def parse_dict(dict_str: str) -> dict[str, Any]:
+    return {}
+
+
 class FormattedTextWriter:
     def __init__(self, title="Formatted text", offset_x: float = 40, offset_y: float = 40):
         self.root = tk.Tk()
@@ -365,7 +456,7 @@ class FormattedTextWriter:
             example_string_list = [
                 EXAMPLE_TEXT,
                 EXAMPLE_TAGS,
-                EXAMPLE_TAGS,
+                EXAMPLE_CODES,
             ]
 
             for text_area, example_string in zip(self.text_area_list, example_string_list):
@@ -495,21 +586,29 @@ class FormattedTextWriter:
         else:
             file_path = self.text_file_path
 
+        tag_text = self.get_text_area_content(self.tags_text_area)
+        code_text = self.get_text_area_content(self.codes_text_area)
+
+        if not self.parse_tags(tag_text, do_errors=False)[0]:
+            tag_text = self.prev_tags_text_content.get()
+        if not self.parse_codes(code_text, do_errors=False)[0]:
+            code_text = self.prev_codes_text_content.get()
+
         full_filename = os.path.basename(file_path)
         full_txt_content = [
             f"TEXT_CONTENT_OF_{full_filename}:",
             '"""',
-            self.text_text_area.get("1.0", "end-1c"),
+            self.get_text_area_content(self.text_text_area),
             '"""',
             "\n",
             f"TAG_CONTENT_OF_{full_filename}:",
             '"""',
-            self.tags_text_area.get("1.0", "end-1c"),
+            tag_text,
             '"""',
             "\n",
             f"CODE_CONTENT_OF_{full_filename}:",
             '"""',
-            self.codes_text_area.get("1.0", "end-1c"),
+            code_text,
             '"""',
         ]
         if not self.save_txt_file(file_path, "\n".join(full_txt_content), show_success=False):
@@ -574,7 +673,16 @@ class FormattedTextWriter:
            it's made up of letters (a through z, either lower or uppercase)
         numbers are by default made into ints/floats
         bools are by default made into bools
+
+        use some function from the parse_codes func
+        but pull them out so not repeat the code
         """
+
+        successful, tags = self.parse_tags(self.get_text_area_content(self.tags_text_area))
+        # if not successful:
+        #     return self.parse_tags(self.prev_tags_text_content.get())[1]
+
+        # return tags
 
         return {
             "TRUE_SUBSCRIPT": {
@@ -597,7 +705,364 @@ class FormattedTextWriter:
         }
 
     def parse_tags(self, tag_text: str, do_errors: bool = True) -> tuple[bool, dict[str, dict[str, Any]]]:  # TODO
-        return True, {}
+        def is_var_declaration_line(line: str, opened_braces: int) -> bool:
+            if opened_braces != 0:
+                return False
+
+            equal_idx = len(line)
+            open_brace_idx = -1
+
+            for idx in range(len(line)):
+                char = line[idx]
+
+                if char == "=":
+                    equal_idx = idx
+                elif char == "{":
+                    open_brace_idx = idx
+
+                if equal_idx != len(line) and open_brace_idx != -1:
+                    break
+
+            return equal_idx < open_brace_idx
+
+        def opened_brace_and_parenthesis_count_delta(line: str) -> int:
+            open_braces = 0
+            open_parentheses = 0
+
+            line_idx = 0
+
+            single_quotes_seen = 0
+            double_quotes_seen = 0
+            triple_quotes_seen = 0
+
+            while line_idx < len(line):
+                if line[line_idx] == "'" and double_quotes_seen == 0 and triple_quotes_seen == 0:
+                    single_quotes_seen += 1
+                elif line[line_idx] == '"' and single_quotes_seen == 0:
+                    if line[line_idx : line_idx + 3] == '"""' and double_quotes_seen == 0:
+                        triple_quotes_seen += 1
+                        line_idx += 2
+                    elif triple_quotes_seen == 0:
+                        double_quotes_seen += 1
+
+                if single_quotes_seen == 3 or double_quotes_seen == 3 or triple_quotes_seen == 3:
+                    single_quotes_seen = single_quotes_seen % 2
+                    double_quotes_seen = double_quotes_seen % 2
+                    triple_quotes_seen = triple_quotes_seen % 2
+
+                if (line[line_idx] in {"\\", ",", ":"}) and (
+                    single_quotes_seen == 2 or double_quotes_seen == 2 or triple_quotes_seen == 2
+                ):
+                    single_quotes_seen = 0
+                    double_quotes_seen = 0
+                    triple_quotes_seen = 0
+
+                if not (single_quotes_seen == 1 or double_quotes_seen == 1 or triple_quotes_seen == 1):
+                    if line[line_idx] == "{":
+                        open_braces += 1
+                    elif line[line_idx] == "}":
+                        open_braces -= 1
+                    if line[line_idx] == "(":
+                        open_parentheses += 1
+                    elif line[line_idx] == ")":
+                        open_parentheses -= 1
+
+                line_idx += 1
+
+            return open_braces, open_parentheses
+
+        def opening_and_closing_bracket_errors(
+            last_var_name: str, open_bracket_count: int, singular_bracket_type: str, plural_bracket_type: str
+        ) -> None:
+            last_important_view_idx = self.current_important_view
+            messagebox.showerror(
+                "Formatting tag",
+                f"Tag '{last_var_name}' has {abs(open_bracket_count)} missing {"opening" if open_bracket_count < 0 else "closing"} {plural_bracket_type if abs(open_bracket_count) > 1 else singular_bracket_type}",
+            )
+            self.focus_on_window_with_idx(last_important_view_idx)
+
+        def full_parse_string(line: str, do_errors: bool) -> tuple[str, bool]:
+            line_chars = []
+
+            single_quotes_seen = 0
+            double_quotes_seen = 0
+            triple_quotes_seen = 0
+
+            just_saw = {
+                "\\": False,
+                ",": False,
+                ":": False,
+            }
+
+            char_to_name = {
+                "\\": "backslash",
+                ",": "comma",
+                ":": "colon",
+            }
+
+            line_idx = 0
+            while line_idx < len(line):
+                if (single_quotes_seen == 2 or double_quotes_seen == 2 or triple_quotes_seen == 2) and line[line_idx] in [
+                    "'",
+                    '"',
+                ]:
+                    if do_errors:
+                        last_important_view_idx = self.current_important_view
+                        messagebox.showerror("Formatting tag", f"Line '{line}' is missing a backslash between quotes")
+                        self.focus_on_window_with_idx(last_important_view_idx)
+
+                    return "", True
+
+                if line[line_idx] == "'" and double_quotes_seen == 0 and triple_quotes_seen == 0:
+                    single_quotes_seen += 1
+                    for key in just_saw:
+                        just_saw[key] = False
+                elif line[line_idx] == '"' and single_quotes_seen == 0:
+                    if line[line_idx : line_idx + 3] == '"""' and double_quotes_seen == 0:
+                        triple_quotes_seen += 1
+                        for key in just_saw:
+                            just_saw[key] = False
+                        line_idx += 2
+                    elif triple_quotes_seen == 0:
+                        double_quotes_seen += 1
+                        for key in just_saw:
+                            just_saw[key] = False
+
+                if line[line_idx] in {"\\", ",", ":"}:
+                    if line_chars[-1] in {"\\", ",", ":"}:
+                        if do_errors:
+                            last_important_view_idx = self.current_important_view
+                            messagebox.showerror("Formatting tag", f"Line '{line}' has at least 2 of ['\\', ',', ':'] in a row")
+                            self.focus_on_window_with_idx(last_important_view_idx)
+
+                        return "", True
+
+                    if single_quotes_seen == 2 or double_quotes_seen == 2 or triple_quotes_seen == 2:
+                        if just_saw[line[line_idx]]:
+                            if do_errors:
+                                last_important_view_idx = self.current_important_view
+                                messagebox.showerror("Formatting tag", f"Line '{line}' has at least 2 {char_to_name[line[line_idx]]} in a row")
+                                self.focus_on_window_with_idx(last_important_view_idx)
+
+                            return "", True
+
+                        just_saw[line[line_idx]]
+                        single_quotes_seen = 0
+                        double_quotes_seen = 0
+                        triple_quotes_seen = 0
+
+                    elif single_quotes_seen % 2 == 0 and double_quotes_seen % 2 == 0 and triple_quotes_seen % 2 == 0 and line[line_idx] == "\\":
+                        if do_errors:
+                            last_important_view_idx = self.current_important_view
+                            messagebox.showerror(
+                                "Formatting tag",
+                                f"Line '{line}' has a backslash outside of a string and not in between 2 strings",
+                            )
+                            self.focus_on_window_with_idx(last_important_view_idx)
+
+                        return "", True
+
+                if single_quotes_seen == 3 or double_quotes_seen == 3 or triple_quotes_seen == 3:
+                    if do_errors:
+                        last_important_view_idx = self.current_important_view
+                        messagebox.showerror(
+                            "Formatting tag",
+                            f"Line '{line}' is missing a backslash for a quote escape character, a comma,\na colon, or a backslash between string pieces",
+                        )
+                        self.focus_on_window_with_idx(last_important_view_idx)
+
+                    return "", True
+
+                if (
+                    line[line_idx].strip() != ""
+                    or single_quotes_seen == 1
+                    or double_quotes_seen == 1
+                    or triple_quotes_seen == 1
+                ):
+                    special_escape = {
+                        "n": "\n",
+                        "t": "\t",
+                        "\\": "\\",
+                    }
+                    if (
+                        line_idx < len(line) - 1
+                        and line[line_idx] == "\\"
+                        and (single_quotes_seen == 1 or double_quotes_seen == 1 or triple_quotes_seen == 1)
+                    ):
+                        if line[line_idx + 1] in ['"', "'"] + list(special_escape.keys()):
+                            line_chars.append(special_escape.get(line[line_idx], line[line_idx]))
+                        else:
+                            line_chars.append("\\")
+                            line_chars.append(line[line_idx + 1])
+                        line_idx += 1
+                    else:
+                        if line[line_idx] == "'":
+                            line_chars.append('"')
+                        else:
+                            line_chars.append(line[line_idx])
+
+                line_idx += 1
+
+            if line[-1] == "\\":
+                if do_errors:
+                    last_important_view_idx = self.current_important_view
+                    messagebox.showerror(
+                        "Formatting tag",
+                        f"Line '{line}' has a backslashes outside of a string and not in between 2 strings",
+                    )
+                    self.focus_on_window_with_idx(last_important_view_idx)
+
+                return "", True
+
+            if single_quotes_seen % 2 != 0 or double_quotes_seen % 2 != 0 or triple_quotes_seen % 2 != 0:
+                if do_errors:
+                    last_important_view_idx = self.current_important_view
+                    messagebox.showerror("Formatting tag", f"Line '{line}' has quotes left unclosed")
+                    self.focus_on_window_with_idx(last_important_view_idx)
+
+                return "", True
+
+            return "".join(line_chars), False
+
+        def add_implicit_quotes(line: str) -> str:
+            line_pieces = []
+
+            var_name = line.split("=")[0]
+            line_pieces.append(var_name)
+            line_pieces.append("=")
+
+            line_idx = len(var_name) + 1
+            string_start = -1
+
+            in_string = False
+
+            while line_idx < len(line):
+                if line[line_idx].upper() in "ABCDEFGHIJKLMNOPQRSTUVWXYZ_0123456789":
+                    if string_start == -1 and not in_string:
+                        string_start = line_idx
+                else:
+                    if string_start != -1:
+                        attribute_name = line[string_start:line_idx]
+                        valid_attribute_name = is_valid_var_name(
+                            self, attribute_name, False, "Formatting tag", type_name="Attribute name"
+                        )
+
+                        if valid_attribute_name:
+                            line_pieces.append('"')
+                        line_pieces.append(attribute_name)
+                        if valid_attribute_name:
+                            line_pieces.append('"')
+
+                        string_start = -1
+
+                if string_start == -1:
+                    line_pieces.append(line[line_idx])
+
+                if line[line_idx] == '"':
+                    in_string = not in_string
+
+                line_idx += 1
+
+            return "".join(line_pieces)
+
+        # Get naive lines
+        naive_lines: list[str] = []
+        for line in tag_text.split("\n"):
+            stripped_naive_line = line.strip()
+            if stripped_naive_line != "":
+                naive_lines.append(stripped_naive_line)
+
+        # Get var lines
+        var_lines: list[str] = []
+        var_line_idx = -1
+        open_brace_count = 0
+        open_parentheses_count = 0
+        using_triple_quotes = False
+        for naive_line in naive_lines:
+            if is_var_declaration_line(naive_line, open_brace_count):
+                if open_brace_count != 0:
+                    if do_errors:
+                        last_var_name = var_lines[var_line_idx].split("=")[0].strip()
+                        opening_and_closing_bracket_errors(last_var_name, open_brace_count, "brace", "braces")
+
+                    return False, {}
+
+                if open_parentheses_count != 0:
+                    if do_errors:
+                        last_var_name = var_lines[var_line_idx].split("=")[0].strip()
+                        opening_and_closing_bracket_errors(
+                            last_var_name, open_parentheses_count, "parenthesis", "parentheses"
+                        )
+
+                    return False, {}
+
+                if not is_valid_var_name(self, naive_line.split("=")[0].strip(), do_errors, "Formatting tag"):
+                    return False, {}
+
+                var_lines.append(naive_line)
+                var_line_idx += 1
+            else:
+                if using_triple_quotes:
+                    var_lines[var_line_idx] += "\n"
+                var_lines[var_line_idx] += naive_line
+
+            brace_delta, parenthesis_delta = opened_brace_and_parenthesis_count_delta(naive_line)
+            open_brace_count += brace_delta
+            open_parentheses_count += parenthesis_delta
+
+            toggle_using, has_error = toggle_using_triple_quotes(self, naive_line, do_errors, "Formatting tag")
+            if has_error:
+                return False, {}
+
+            if toggle_using:
+                using_triple_quotes = not using_triple_quotes
+
+        if open_brace_count != 0:
+            if do_errors:
+                last_var_name = var_lines[var_line_idx].split("=")[0].strip()
+                opening_and_closing_bracket_errors(last_var_name, open_brace_count, "brace", "braces")
+
+            return False, {}
+
+        if open_parentheses_count != 0:
+            if do_errors:
+                last_var_name = var_lines[var_line_idx].split("=")[0].strip()
+                opening_and_closing_bracket_errors(last_var_name, open_parentheses_count, "parenthesis", "parentheses")
+
+            return False, {}
+
+        # Parse strings
+        parsed_string_var_lines: list[str] = []
+        for var_line in var_lines:
+            parsed_var_line, has_error = full_parse_string(var_line, do_errors)
+            if has_error:
+                return False, {}
+            
+            parsed_string_var_lines.append("=".join(make_a_single_string(parsed_var_line, cut_ends=False)))
+
+        # Add quotes to implicit strings
+        quoted_var_lines: list[str] = []
+        for var_line in parsed_string_var_lines:
+            quoted_var_lines.append(add_implicit_quotes(var_line))
+
+        # Finalized strings
+        final_var_lines: list[str] = []
+        for var_line in quoted_var_lines:
+            final_var_lines.append("=".join(make_a_single_string(var_line, cut_ends=False)))
+
+        # Final parsing
+        final_var_vals: dict[str, dict[str, Any]] = {}
+        for var_line in final_var_lines:
+            var_name = var_line.split("=")[0]
+            dict_part = var_line[len(var_name) + 1 :]
+
+            final_var_vals[var_name] = parse_dict(dict_part)
+            if do_errors:
+                print(dict_part)
+                print(final_var_vals[var_name])
+                print()
+
+        return True, final_var_vals
 
     def read_codes(self, force_read: bool = False) -> dict[str, str]:
         if not self.do_text_codes_var.get() and not force_read:
@@ -630,61 +1095,7 @@ class FormattedTextWriter:
 
             return equal_idx < single_quote_idx or equal_idx < double_quote_idx
 
-        def is_valid_var_name(var_name: str) -> bool:
-            # Check the beginning
-            if var_name[0].upper() not in "ABCDEFGHIJKLMNOPQRSTUVWXYZ_":
-                if do_errors:
-                    last_important_view_idx = self.current_important_view
-                    messagebox.showerror("Text code", f"Var name '{var_name}' is invalid because it starts with '{var_name[0]}'")
-                    self.focus_on_window_with_idx(last_important_view_idx)
-
-                return False
-
-            # Check the entire name
-            for char in var_name:
-                if char == " ":
-                    if do_errors:
-                        last_important_view_idx = self.current_important_view
-                        messagebox.showerror("Text code", f"Var name '{var_name}' is invalid because it contains space(s)")
-                        self.focus_on_window_with_idx(last_important_view_idx)
-
-                    return False
-                
-                if char.upper() not in "ABCDEFGHIJKLMNOPQRSTUVWXYZ_0123456789":
-                    if do_errors:
-                        last_important_view_idx = self.current_important_view
-                        messagebox.showerror("Text code", f"Var name '{var_name}' is invalid because it contains '{char}'")
-                        self.focus_on_window_with_idx(last_important_view_idx)
-
-                    return False
-
-            return True
-
-        def toggle_using_triple_quotes(line: str, do_errors: bool) -> tuple[bool, bool]:
-            line_idx = 0
-            triple_quotes_seen = 0
-
-            while line_idx < len(line):
-                if line[line_idx : line_idx + 3] == '"""':
-                    triple_quotes_seen += 1
-                    line_idx += 2
-
-                if line[line_idx] == "\\":
-                    triple_quotes_seen = 0
-
-                if triple_quotes_seen == 3:
-                    if do_errors:
-                        last_important_view_idx = self.current_important_view
-                        messagebox.showerror("Text code", f"Line '{line}' has invalid triple quote usage")
-                        self.focus_on_window_with_idx(last_important_view_idx)
-
-                    return False, True
-
-                line_idx += 1
-
-            return triple_quotes_seen % 2 == 1, False
-
-        def strip_line_and_check_errors(line: str, do_errors: bool) -> tuple[str, bool]:
+        def full_parse_string(line: str, do_errors: bool) -> tuple[str, bool]:
             line_chars = []
 
             single_quotes_seen = 0
@@ -695,10 +1106,10 @@ class FormattedTextWriter:
 
             line_idx = 0
             while line_idx < len(line):
-                if (
-                    (single_quotes_seen == 2 or double_quotes_seen == 2 or triple_quotes_seen == 2)
-                    and line[line_idx] in ["'", '"']
-                ):
+                if (single_quotes_seen == 2 or double_quotes_seen == 2 or triple_quotes_seen == 2) and line[line_idx] in [
+                    "'",
+                    '"',
+                ]:
                     if do_errors:
                         last_important_view_idx = self.current_important_view
                         messagebox.showerror("Text code", f"Line '{line}' is missing a backslash between quotes")
@@ -718,21 +1129,31 @@ class FormattedTextWriter:
                         double_quotes_seen += 1
                         just_saw_backslash = False
 
-                if line[line_idx] == "\\" and (
-                    single_quotes_seen == 2 or double_quotes_seen == 2 or triple_quotes_seen == 2
-                ):
-                    if just_saw_backslash:
+                if line[line_idx] == "\\":
+                    if single_quotes_seen == 2 or double_quotes_seen == 2 or triple_quotes_seen == 2:
+                        if just_saw_backslash:
+                            if do_errors:
+                                last_important_view_idx = self.current_important_view
+                                messagebox.showerror("Text code", f"Line '{line}' has 2 backslashes in a row")
+                                self.focus_on_window_with_idx(last_important_view_idx)
+
+                            return "", True
+
+                        just_saw_backslash = True
+                        single_quotes_seen = 0
+                        double_quotes_seen = 0
+                        triple_quotes_seen = 0
+
+                    elif single_quotes_seen % 2 == 0 and double_quotes_seen % 2 == 0 and triple_quotes_seen % 2 == 0:
                         if do_errors:
                             last_important_view_idx = self.current_important_view
-                            messagebox.showerror("Text code", f"Line '{line}' has 2 backslashes in a row")
+                            messagebox.showerror(
+                                "Text code",
+                                f"Line '{line}' has a backslash outside of a string and not in between 2 strings",
+                            )
                             self.focus_on_window_with_idx(last_important_view_idx)
 
                         return "", True
-
-                    just_saw_backslash = True
-                    single_quotes_seen = 0
-                    double_quotes_seen = 0
-                    triple_quotes_seen = 0
 
                 if single_quotes_seen == 3 or double_quotes_seen == 3 or triple_quotes_seen == 3:
                     if do_errors:
@@ -754,7 +1175,7 @@ class FormattedTextWriter:
                     special_escape = {
                         "n": "\n",
                         "t": "\t",
-                        "\\": "\\\\",
+                        "\\": "\\",
                     }
                     if (
                         line_idx < len(line) - 1
@@ -762,16 +1183,29 @@ class FormattedTextWriter:
                         and (single_quotes_seen == 1 or double_quotes_seen == 1 or triple_quotes_seen == 1)
                     ):
                         if line[line_idx + 1] in ['"', "'"] + list(special_escape.keys()):
-                            line_idx += 1
-                            line_chars.append(
-                                special_escape.get(line[line_idx], line[line_idx])
-                            )
+                            line_chars.append(special_escape.get(line[line_idx], line[line_idx]))
                         else:
-                            line_chars.append("\\\\")
+                            line_chars.append("\\")
+                            line_chars.append(line[line_idx + 1])
+                        line_idx += 1
                     else:
-                        line_chars.append(line[line_idx])
+                        if line[line_idx] == "'":
+                            line_chars.append('"')
+                        else:
+                            line_chars.append(line[line_idx])
 
                 line_idx += 1
+
+            if line[-1] == "\\":
+                if do_errors:
+                    last_important_view_idx = self.current_important_view
+                    messagebox.showerror(
+                        "Text code",
+                        f"Line '{line}' has a backslashes outside of a string and not in between 2 strings",
+                    )
+                    self.focus_on_window_with_idx(last_important_view_idx)
+
+                return "", True
 
             if single_quotes_seen % 2 != 0 or double_quotes_seen % 2 != 0 or triple_quotes_seen % 2 != 0:
                 if do_errors:
@@ -782,24 +1216,6 @@ class FormattedTextWriter:
                 return "", True
 
             return "".join(line_chars), False
-
-        def make_a_single_string(line: str) -> tuple[str, str]:
-            var_name = line.split("=")[0]
-            line_pieces = line.split("\\")
-            line_pieces[0] = line_pieces[0][len(var_name) + 1 :]
-            single_string = []
-
-            for line_piece in line_pieces:
-                if len(line_piece) == 0:
-                    single_string.append("\\")
-                elif line_piece[0] == "'":
-                    single_string.append(line_piece[1:-1])
-                elif line_piece[:3] == '"""':
-                    single_string.append(line_piece[3:-3])
-                elif line_piece[0] == '"':
-                    single_string.append(line_piece[1:-1])
-
-            return var_name, "".join(single_string)
 
         # Get naive lines
         naive_lines: list[str] = []
@@ -813,10 +1229,10 @@ class FormattedTextWriter:
         var_line_idx = -1
         using_triple_quotes = False
         for naive_line in naive_lines:
-            if is_var_declaration_line(naive_line):
-                if not is_valid_var_name(naive_line.split("=")[0].strip()):
+            if is_var_declaration_line(naive_line) and not using_triple_quotes:
+                if not is_valid_var_name(self, naive_line.split("=")[0].strip(), do_errors, "Text code"):
                     return False, {}
-                
+
                 var_lines.append(naive_line)
                 var_line_idx += 1
             else:
@@ -824,26 +1240,29 @@ class FormattedTextWriter:
                     var_lines[var_line_idx] += "\n"
                 var_lines[var_line_idx] += naive_line
 
-            toggle_using, has_error = toggle_using_triple_quotes(naive_line, do_errors)
+            toggle_using, has_error = toggle_using_triple_quotes(self, naive_line, do_errors, "Text code")
             if has_error:
                 return False, {}
 
             if toggle_using:
                 using_triple_quotes = not using_triple_quotes
 
-        # Get stripped var lines
-        stripped_var_lines: list[str] = []
+        # Final parsing
+        final_var_vals: dict[str, str] = {}
         for var_line in var_lines:
-            stripped_var_line, has_error = strip_line_and_check_errors(var_line, do_errors)
+            stripped_var_line, has_error = full_parse_string(var_line, do_errors)
             if has_error:
                 return False, {}
 
-            stripped_var_lines.append(stripped_var_line)
+            var_name, var_val = make_a_single_string(stripped_var_line)
+            if var_name in final_var_vals:
+                if do_errors:
+                    last_important_view_idx = self.current_important_view
+                    messagebox.showerror("Text code", f"Text code '{var_name}' already exists")
+                    self.focus_on_window_with_idx(last_important_view_idx)
 
-        # Replace single and triple quotes with double quotes and remove backslashes
-        final_var_vals: dict[str, str] = {}
-        for var_line in stripped_var_lines:
-            var_name, var_val = make_a_single_string(var_line)
+                return False, {}
+
             final_var_vals[var_name] = var_val
 
         return True, final_var_vals
