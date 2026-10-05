@@ -3,6 +3,7 @@ import re
 import tkinter as tk
 from typing import Literal, Any
 from tkinter import filedialog, messagebox
+from str_to_type_parser import parse_fundamental_or_dict_or_tuple
 from interactive_displays.text_popup_window import (
     setup_text_popup_window,
     create_popup_window_toplevel,
@@ -110,19 +111,6 @@ def make_a_single_string(line: str, cut_ends: bool = True) -> tuple[str, str]:
     cut_line = line[len(var_name) + 2 : -1] if cut_ends else line[len(var_name) + 1 :]
     line_pieces = cut_line.split('"\\"')
     return var_name, "".join(line_pieces)
-
-
-def parse_number(num_str: str) -> int | float:
-    pass
-
-def parse_tuple(tuple_str: str) -> tuple[Any, ...]:
-    pass
-
-def parse_boolean(bool_str: str) -> bool:
-    pass
-
-def parse_dict(dict_str: str) -> dict[str, Any]:
-    return {}
 
 
 class FormattedTextWriter:
@@ -832,7 +820,9 @@ class FormattedTextWriter:
                     if line_chars[-1] in {"\\", ",", ":"}:
                         if do_errors:
                             last_important_view_idx = self.current_important_view
-                            messagebox.showerror("Formatting tag", f"Line '{line}' has at least 2 of ['\\', ',', ':'] in a row")
+                            messagebox.showerror(
+                                "Formatting tag", f"Line '{line}' has at least 2 of ['\\', ',', ':'] in a row"
+                            )
                             self.focus_on_window_with_idx(last_important_view_idx)
 
                         return "", True
@@ -841,7 +831,9 @@ class FormattedTextWriter:
                         if just_saw[line[line_idx]]:
                             if do_errors:
                                 last_important_view_idx = self.current_important_view
-                                messagebox.showerror("Formatting tag", f"Line '{line}' has at least 2 {char_to_name[line[line_idx]]} in a row")
+                                messagebox.showerror(
+                                    "Formatting tag", f"Line '{line}' has at least 2 {char_to_name[line[line_idx]]} in a row"
+                                )
                                 self.focus_on_window_with_idx(last_important_view_idx)
 
                             return "", True
@@ -851,7 +843,12 @@ class FormattedTextWriter:
                         double_quotes_seen = 0
                         triple_quotes_seen = 0
 
-                    elif single_quotes_seen % 2 == 0 and double_quotes_seen % 2 == 0 and triple_quotes_seen % 2 == 0 and line[line_idx] == "\\":
+                    elif (
+                        single_quotes_seen % 2 == 0
+                        and double_quotes_seen % 2 == 0
+                        and triple_quotes_seen % 2 == 0
+                        and line[line_idx] == "\\"
+                    ):
                         if do_errors:
                             last_important_view_idx = self.current_important_view
                             messagebox.showerror(
@@ -1037,7 +1034,7 @@ class FormattedTextWriter:
             parsed_var_line, has_error = full_parse_string(var_line, do_errors)
             if has_error:
                 return False, {}
-            
+
             parsed_string_var_lines.append("=".join(make_a_single_string(parsed_var_line, cut_ends=False)))
 
         # Add quotes to implicit strings
@@ -1056,7 +1053,7 @@ class FormattedTextWriter:
             var_name = var_line.split("=")[0]
             dict_part = var_line[len(var_name) + 1 :]
 
-            final_var_vals[var_name] = parse_dict(dict_part)
+            final_var_vals[var_name] = parse_fundamental_or_dict_or_tuple(dict_part)
             if do_errors:
                 print(dict_part)
                 print(final_var_vals[var_name])
