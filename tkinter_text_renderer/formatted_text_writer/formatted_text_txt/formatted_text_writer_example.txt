@@ -63,7 +63,4 @@ you can also write ' and " without any problems"""
 
 TRIPLE_QUOTES_MULTI_LINED = """You can also use backslashes on"""\
 " triple quotes"
-
-TEST = """
-HI = "HI" """
 """

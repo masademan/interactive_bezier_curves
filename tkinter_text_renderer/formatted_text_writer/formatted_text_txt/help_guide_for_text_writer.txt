@@ -39,10 +39,11 @@ Formatting tags are useful because they let you customize almost any property of
 To format text with a formatting tag, you need to use the opening and closing tag. So if you had a tag to turn text red named "RED", you'd write the text like this:
 non red text [RED]your red text here[RED/] non red text
 
-There are 3 buttons at the top of the window which say "Clear tags", "Update preview", and "Convert tags and copy"
+There are 4 buttons at the top of the window which say "Clear tags", "Update preview", "Convert tags and copy", and "Copy tag text"
 1. Pressing "Clear tags" clears all the tags in the window, essentially allowing you to restart clean when writing tags.
 2. Pressing "Update preview" forces an update on the update window. This is because the tags window doesn't constantly update the preview with changes since you might not be finished with writing a tag.
 3. Pressing "Convert tags and copy" takes the tags you wrote, turns it into a dict and copies it to your clipboard. This lets you paste it into a Python file as is.
+4. Pressing "Copy tag text" takes all the text in the tag writing window and copies it to your clipboard. This lets you paste it as a string for testing or to place in any piece of code.
 
 [H2]Formatting tag rules[H2/]
 It's not necessary, but it's recommended to make all the tags in all caps to make them distinct from normal text.
@@ -50,7 +51,7 @@ Make sure there aren't any spaces in the tag name, this can lead to ambiguity in
 Again, these tags should be written like normal variables in Python.
 
 Once you write the tag name, you can have any number of spaces, an equals sign, any number of spaces, and then a dictionary of values to change. Just like in Python, you can write all the parts of the dictionary in one line or split it into multiple lines. The keys of the dictionary should be the names of the tkinter Text attributes that can be edited through tags
-Here's a list to all the attributes that can be edited (not clickable):
+Here's a list to all the attributes that can be edited (NOT CLICKABLE):
 [HYPERLINK]https://www.tcl-lang.org/man/tcl8.5/TkCmd/text.htm#M26:~:text=non%2Delided%20index.-,TAGS,-The%20first%20form[HYPERLINK/]
 
 You don't have to necessarily use quote marks to signify something is a string in the dictionary. If it's made up of numbers, it's assumed to be a float or integer (depending on whether or not there's a decimal point). If it's "True" or "False" (case insensitive), it'll assume it's a boolean. If it has parentheses, it's assumed to be a tuple. Otherwise, it's a string. You can explicitly make something a string by using quotes, double or single. If using strings, the definition of strings works the same as Python strings. Triple quotes, single quote in double quoted strings, double quote in single quoted strings, backslashes to split a string along different lines, and escape characters (\\, \n, \t, \', and \") work. Though you can just type \ instead of \\ as long as the next character isn't one belonging to the escape characters, because you might get accidental escape characters you didn't mean for.
@@ -73,10 +74,11 @@ COORD_I = (x[SUBSCRIPT]i[SUBSCRIPT/], y[SUBSCRIPT]i[SUBSCRIPT/])
 So instead of writing the mess of text from earlier, you could just write "[/COORD_I]" to get "[/TRUE_COORD_I]"
 This makes writing formatted text much easier to read and navigate.
 
-There are 3 buttons at the top of the window which say "Clear codes", "Update preview", and "Convert codes and copy"
+There are 4 buttons at the top of the window which say "Clear codes", "Update preview", "Convert codes and copy", and "Copy code text"
 1. Pressing "Clear codes" clears all the codes in the window, essentially allowing you to restart clean when writing codes.
 2. Pressing "Update preview" forces an update on the update window. This is because the tags window doesn't constantly update the preview with changes since you might not be finished with writing a tag.
 3. Pressing "Convert codes and copy" takes the tags you wrote, turns it into a dict and copies it to your clipboard. This lets you paste it into a Python file as is.
+4. Pressing "Copy code text" takes all the text in the code writing window and copies it to your clipboard. This lets you paste it as a string for testing or to place in any piece of code.
 
 [H2]Text code rules[H2/]
 It's not necessary, but it's recommended to make all the codes in all caps to make them distinct from normal text.
@@ -113,7 +115,7 @@ There are 2 checkboxes and 2 button at the top of the window that says "Do forma
 
 
 [/TAB][H1]General info[H1/]
-When opening the program for the first time, there should be example text in each text input window to show what to make the format look like.
+When opening the program for the first time, there will be example text in each text input window to show what the format and structure looks like.
 
 
 [/TAB][H1]Shortcuts:[H1/]
@@ -199,12 +201,14 @@ Button shortcuts:
 Ctrl + 1[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Button 1 (Clear tags)
 Ctrl + 2[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Button 2 (Update preview)
 Ctrl + 3[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Button 3 (Convert tags and copy)
+Ctrl + 4[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Button 4 (Copy tag text)
 
 [H2]Formatted text codes[H2/]
 Button shortcuts:
 Ctrl + 1[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Button 1 (Clear codes)
 Ctrl + 2[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Button 2 (Update preview)
 Ctrl + 3[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Button 3 (Convert codes and copy)
+Ctrl + 4[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Button 4 (Copy code text)
 
 [H2]Formatted text preview[H2/]
 Button/checkbox shortcuts:
