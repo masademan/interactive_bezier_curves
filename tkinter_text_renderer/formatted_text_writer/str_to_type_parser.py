@@ -1,4 +1,4 @@
-from typing import Literal, Any
+from typing import Literal
 
 
 def is_int_str(str_in: str) -> bool:
