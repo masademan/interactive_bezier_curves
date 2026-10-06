@@ -8,14 +8,18 @@ You can write text codes and text formatting tags here along with the text you w
 Formatting tags have an opening and closing tag to signify what text they're tagging.
 The opening tags are written in the form {OPENING_TAG.format("TAG_NAME_HERE")}, and the closing tags are written in the form {CLOSING_TAG.format("TAG_NAME_HERE")}.
 So for a "BOLD" tag, the opening and closing tags would be written like {OPENING_TAG.format("BOLD")} and {CLOSING_TAG.format("BOLD")}, with the text you want bolded in between the opening and closing tags.
+Tags can be stacked on text when that text is in between multiple opening and closing tags. Like turning text red and bold with 1 tag, or stacking a bold tag with a red tag.
 
 Text codes are written in the form {TEXT_CODE.format("CODE_NAME_HERE")}, so for a "TAB" code, it would be written like {TEXT_CODE.format("TAB")}.
+Text codes can hold formatting tags in them as a shorthand which is mentioned more later.
 
 If there's an error in your formatting, then the preview window will turn red, and if there's a warning in your formatting, the preview window will turn yellow. When there's an error, formatting will stop completely, but if there's a warning, it'll still format everything.
 Errors happen when there's an open tag without a closing, or vice versa. And this usually happens with a typo or a missing "/" in the closing tag.
 Warnings happen when there's a closing tag between an opening and closing tag that doesn't correspond to either. For example, if there was an opening tag for red text, an opening tag for underlined text, a closing tag for red text, and then a closing tag for underlined text, there'd be an error.
 Warning: [RED][UNDERLINED][RED/][UNDERLINED/]
 Correct: [RED][UNDERLINED][UNDERLINED/][RED/]
+
+The default font is an 11 point Arial font.
 
 There are 5 buttons at the top of the window which say "Load text", "New text", "Help", "Clear text", and "Copy text".
 1. Pressing the "Load text" button opens a popup to ask which .txt file you want to load in. It needs to be a valid .txt file from this program, otherwise it won't load correctly. The only way to guarantee that the .txt works is by saving the text you made and then later loading it in.
@@ -39,11 +43,14 @@ Formatting tags are useful because they let you customize almost any property of
 To format text with a formatting tag, you need to use the opening and closing tag. So if you had a tag to turn text red named "RED", you'd write the text like this:
 non red text [RED]your red text here[RED/] non red text
 
-There are 4 buttons at the top of the window which say "Clear tags", "Update preview", "Convert tags and copy", and "Copy tag text"
+There are 4 buttons at the top of the window which say "Clear tags", "Update preview", "Convert tags and copy", "Copy tag text", and "Load preset tags"
 1. Pressing "Clear tags" clears all the tags in the window, essentially allowing you to restart clean when writing tags.
 2. Pressing "Update preview" forces an update on the update window. This is because the tags window doesn't constantly update the preview with changes since you might not be finished with writing a tag.
 3. Pressing "Convert tags and copy" takes the tags you wrote, turns it into a dict and copies it to your clipboard. This lets you paste it into a Python file as is.
 4. Pressing "Copy tag text" takes all the text in the tag writing window and copies it to your clipboard. This lets you paste it as a string for testing or to place in any piece of code.
+5. Pressing "Load preset tags" either replaces all your current tags with preset ones, or it adds the preset tags to the ones you wrote. It'll prompt you which action it should take if you've already written something, or you can cancel the action with this prompt. If the tag input is empty, it will automatically add the preset tags without a prompt.
+
+The preset tags include: SUBSCRIPT, H1, H2, HYPERLINK, UNDERLINE, STRIKETHROUGH, BOLD, ITALIC, & RED
 
 [H2]Formatting tag rules[H2/]
 It's not necessary, but it's recommended to make all the tags in all caps to make them distinct from normal text.
@@ -202,6 +209,7 @@ Ctrl + 1[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Button 1 (Clear tags)
 Ctrl + 2[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Button 2 (Update preview)
 Ctrl + 3[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Button 3 (Convert tags and copy)
 Ctrl + 4[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Button 4 (Copy tag text)
+Ctrl + 5[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Button 5 (Load preset tags)
 
 [H2]Formatted text codes[H2/]
 Button shortcuts:

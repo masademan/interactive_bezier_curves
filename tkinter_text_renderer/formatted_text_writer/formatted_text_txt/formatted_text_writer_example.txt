@@ -9,6 +9,8 @@ Formatting tag example:
 
 [BOLD]This text is bold[BOLD/]
 
+[BOLD][RED]This text is red and bold![RED/][BOLD/]
+
 This text is [SUBSCRIPT]subscripted[SUBSCRIPT/]
 
 
@@ -62,5 +64,5 @@ you can also write ' and " without any problems"""
 
 
 TRIPLE_QUOTES_MULTI_LINED = """You can also use backslashes on"""\
-" triple quotes"
+" triple quotes" 
 """
