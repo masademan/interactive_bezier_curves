@@ -999,6 +999,7 @@ class BezierGUI:
                 "Control point pos",
                 "A window showing the positions of the control points is already open",
             )
+            self.show_and_focus_on_window(self.help_window)
             self.control_point_pos_window.deiconify()
             self.control_point_pos_window.lift()
             self.control_point_pos_window.focus_force()
@@ -1010,13 +1011,16 @@ class BezierGUI:
             self.quit,
             full_quit_func=self.full_quit,
         )
+        self.control_point_pos_window.bind("<Control-w>", self.quit_control_point_pos_window)
+        self.control_point_pos_window.bind("<Escape>", self.quit_control_point_pos_window)
 
         self.control_point_text_area = setup_text_popup_window(self.control_point_pos_window)
 
         clear_text_area(self.control_point_text_area)
         show_control_point_pos_in_window(self.control_point_text_area, self.control_points)
 
-        self.control_point_pos_window.focus_force()
+        self.show_and_focus_on_window(self.help_window)
+        self.show_and_focus_on_window(self.control_point_pos_window)
 
     def open_help_guide(self) -> None:
         if self.help_window != None:
@@ -1025,14 +1029,13 @@ class BezierGUI:
                     "Help guide",
                     f"A window showing the help guide for '{self.current_help_guide}' is already open",
                 )
+                self.show_and_focus_on_window(self.control_point_pos_window)
                 self.help_window.deiconify()
                 self.help_window.lift()
                 self.help_window.focus_force()
                 return
 
-            self.help_window.destroy()
-            self.help_text_area = None
-            self.current_help_guide = None
+            self.quit_help_window()
 
         self.current_help_guide = self.help_selection.get()
 
@@ -1042,6 +1045,8 @@ class BezierGUI:
             self.quit,
             full_quit_func=self.full_quit,
         )
+        self.help_window.bind("<Control-w>", self.quit_help_window)
+        self.help_window.bind("<Escape>", self.quit_help_window)
 
         self.help_text_area = setup_text_popup_window(self.help_window)
 
@@ -1062,7 +1067,8 @@ class BezierGUI:
 
         set_max_window_size_with_text(self.help_window, self.help_text_area)
 
-        self.help_window.focus_force()
+        self.show_and_focus_on_window(self.control_point_pos_window)
+        self.show_and_focus_on_window(self.help_window)
 
     def next_help_guide(self) -> None:
         if self.current_help_guide == None:
@@ -1166,19 +1172,33 @@ class BezierGUI:
             print(self.root.winfo_width(), self.root.winfo_height())
             print(self.get_graph_coord_limits())
 
+    def show_and_focus_on_window(self, window: tk.Tk | tk.Toplevel | None) -> None:
+        if window is None:
+            return
+
+        window.deiconify()
+        window.lift()
+        window.focus_force()
+
     def run_gui(self) -> None:
         self.root.mainloop()
 
+    def quit_help_window(self, _event=None) -> None:
+        self.help_window.destroy()
+        self.help_window = None
+        self.help_text_area = None
+        self.current_help_guide = None
+
+    def quit_control_point_pos_window(self, _event=None) -> None:
+        self.control_point_pos_window.destroy()
+        self.control_point_pos_window = None
+        self.control_point_text_area = None
+
     def quit(self, _event=None) -> None:
         if self.help_window is not None:
-            self.help_window.destroy()
-            self.help_window = None
-            self.help_text_area = None
-            self.current_help_guide = None
+            self.quit_help_window()
         elif self.control_point_pos_window is not None:
-            self.control_point_pos_window.destroy()
-            self.control_point_pos_window = None
-            self.control_point_text_area = None
+            self.quit_control_point_pos_window()
         else:
             self.root.destroy()
 
