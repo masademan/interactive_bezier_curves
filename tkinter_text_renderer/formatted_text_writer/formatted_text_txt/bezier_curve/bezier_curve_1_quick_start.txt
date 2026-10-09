@@ -1,0 +1,58 @@
+TEXT_CONTENT_OF_bezier_curve_1_quick_start.txt:
+"""
+[H1]Program function[H1/]
+This program is to interactively generate any order Bezier curve given some number and position of control points.
+This program was creation was just a sudden burst of motivation after talking about Bezier curves in a math class, so now enjoy this program [STRIKETHROUGH]modern art generator[STRIKETHROUGH/]
+
+[H1]UI basics[H1/]
+The UI is split into 2 main parts, the canvas where the stuff is drawn, and the controls where you can change different settings that change the canvas.
+
+The canvas takes up most of the window and it shrinks or grows to take up as large of a space in the window as possible. So for larger curves, a larger window is recommended, since the canvas would grow accordingly.
+
+The controls take up a maximum width and sit on the right of the window. And within the controls, there are 4 main sections signified by the gray boxes.
+The sections are labeled in bold "Grid settings", "Control point settings", "Bezier curve settings", and "Help".
+Each section contains controls for the respective name, so there are settings for the Bezier curve rendering in the "Bezier curve settings" section, etc.
+And at the bottom of the controls, there are 2 buttons, "Reset" and "Quit". Pressing the "Reset" button makes all the settings you changed reset to the default, and the defaults are just what the settings were when the window first opened. And pressing the "Quit" button closes the program.
+
+
+[H1]Control point basics[H1/]
+
+
+
+[H1]Bezier curve basics[H1/]
+
+"""
+
+
+TAG_CONTENT_OF_bezier_curve_1_quick_start.txt:
+"""
+SUBSCRIPT = {
+font: (Arial, 8),
+offset: -3,
+}
+
+H1 = { font: (Arial, 15, bold) }
+
+H2 = { font: (Arial, 13, bold) }
+
+HYPERLINK = {
+foreground: blue,
+underline: True,
+}
+
+UNDERLINE = { underline: True }
+
+STRIKETHROUGH = { overstrike: True }
+
+BOLD = { font: (Arial, 11, bold) }
+
+ITALIC = { font: (Arial, 11, italic) }
+
+RED = { foreground: red }
+"""
+
+
+CODE_CONTENT_OF_bezier_curve_1_quick_start.txt:
+"""
+
+"""

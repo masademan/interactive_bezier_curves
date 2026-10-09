@@ -22,9 +22,6 @@ from tkinter_text_renderer.tkinter_text_renderer import (
 # AI generated code is labeled with the comment "AI generated" before it
 # If it was only partially AI generated, the comment will be "Partially AI generated"
 
-# edit the guide for the formatted text writer to include the "load presets" button
-# also make a list of presets
-
 HELP_GUIDE_FOR_TEXT_WRITER = f"""[/TAB][H1]Main text writing area:[H1/]\nIt has the title "Formatted text writer" and this is where all formatted text is written, including this text right here!\n\nYou can write text codes and text formatting tags here along with the text you want to show and edit.\n\nFormatting tags have an opening and closing tag to signify what text they\'re tagging.\nThe opening tags are written in the form {OPENING_TAG.format("TAG_NAME_HERE")}, and the closing tags are written in the form {CLOSING_TAG.format("TAG_NAME_HERE")}.\nSo for a "BOLD" tag, the opening and closing tags would be written like {OPENING_TAG.format("BOLD")} and {CLOSING_TAG.format("BOLD")}, with the text you want bolded in between the opening and closing tags.\nTags can be stacked on text when that text is in between multiple opening and closing tags. Like turning text red and bold with 1 tag, or stacking a bold tag with a red tag.\n\nText codes are written in the form {TEXT_CODE.format("CODE_NAME_HERE")}, so for a "TAB" code, it would be written like {TEXT_CODE.format("TAB")}.\nText codes can hold formatting tags in them as a shorthand which is mentioned more later.\n\nIf there\'s an error in your formatting, then the preview window will turn red, and if there\'s a warning in your formatting, the preview window will turn yellow. When there\'s an error, formatting will stop completely, but if there\'s a warning, it\'ll still format everything.\nErrors happen when there\'s an open tag without a closing, or vice versa. And this usually happens with a typo or a missing "/" in the closing tag.\nWarnings happen when there\'s a closing tag between an opening and closing tag that doesn\'t correspond to either. For example, if there was an opening tag for red text, an opening tag for underlined text, a closing tag for red text, and then a closing tag for underlined text, there\'d be an error.\nWarning: [RED][UNDERLINED][RED/][UNDERLINED/]\nCorrect: [RED][UNDERLINED][UNDERLINED/][RED/]\n\nThe default font is an 11 point Arial font.\n\nThere are 5 buttons at the top of the window which say "Load text", "New text", "Help", "Clear text", and "Copy text".\n1. Pressing the "Load text" button opens a popup to ask which .txt file you want to load in. It needs to be a valid .txt file from this program, otherwise it won\'t load correctly. The only way to guarantee that the .txt works is by saving the text you made and then later loading it in.\n2. Pressing the "New text" button clears all the text inputs and removes the link of the current edited text to any .txt file path.\n3. Pressing the "Help" button opens a window to explain how to use the entire program. That help guide was written in this very program!\n4. Pressing the "Clear text" button clears the text in this window. This action is able to be undone using Ctrl + Z.\n5. Pressing the "Copy text" button turns it into a valid Python string, which you can then paste into a triple quoted string. Do note that the copied text doesn\'t include the quotes, but only the text that goes inside the quotes.\n\n\n[/TAB][H1]Formatting tag area:[H1/]\n[H2]Basics[H2/]\nIt has the title "Formatted text formatting" and this is where all the formatting tags are defined.\n\nThese should be written like writing variables in Python. It should be in this form:\n""" + """TAG_NAME = { SETTING_NAME: VALUE_TO_SET }\n\nWhere "TAG_NAME" is the name you want for that code (rules on naming later), and "{ SETTING_NAME: VALUE_TO_SET }" to be the setting for the text property.\n\nFormatting tags are useful because they let you customize almost any property of text. You can change the font family, size, of styling (bold, italic, etc.), vertical positioning, color, background, etc.\n\nTo format text with a formatting tag, you need to use the opening and closing tag. So if you had a tag to turn text red named "RED", you\'d write the text like this:\nnon red text [RED]your red text here[RED/] non red text\n\nThere are 4 buttons at the top of the window which say "Clear tags", "Update preview", "Convert tags and copy", "Copy tag text", and "Load preset tags"\n1. Pressing "Clear tags" clears all the tags in the window, essentially allowing you to restart clean when writing tags.\n2. Pressing "Update preview" forces an update on the update window. This is because the tags window doesn\'t constantly update the preview with changes since you might not be finished with writing a tag.\n3. Pressing "Convert tags and copy" takes the tags you wrote, turns it into a dict and copies it to your clipboard. This lets you paste it into a Python file as is.\n4. Pressing "Copy tag text" takes all the text in the tag writing window and copies it to your clipboard. This lets you paste it as a string for testing or to place in any piece of code.\n5. Pressing "Load preset tags" either replaces all your current tags with preset ones, or it adds the preset tags to the ones you wrote. It\'ll prompt you which action it should take if you\'ve already written something, or you can cancel the action with this prompt. If the tag input is empty, it will automatically add the preset tags without a prompt.\n\nThe preset tags include: SUBSCRIPT, H1, H2, HYPERLINK, UNDERLINE, STRIKETHROUGH, BOLD, ITALIC, & RED\n\n[H2]Formatting tag rules[H2/]\nIt\'s not necessary, but it\'s recommended to make all the tags in all caps to make them distinct from normal text.\nMake sure there aren\'t any spaces in the tag name, this can lead to ambiguity in the tag name.\nAgain, these tags should be written like normal variables in Python.\n\nOnce you write the tag name, you can have any number of spaces, an equals sign, any number of spaces, and then a dictionary of values to change. Just like in Python, you can write all the parts of the dictionary in one line or split it into multiple lines. The keys of the dictionary should be the names of the tkinter Text attributes that can be edited through tags\nHere\'s a list to all the attributes that can be edited (NOT CLICKABLE):\n[HYPERLINK]https://www.tcl-lang.org/man/tcl8.5/TkCmd/text.htm#M26:~:text=non%2Delided%20index.-,TAGS,-The%20first%20form[HYPERLINK/]\n\nYou don\'t have to necessarily use quote marks to signify something is a string in the dictionary. If it\'s made up of numbers, it\'s assumed to be a float or integer (depending on whether or not there\'s a decimal point). If it\'s "True" or "False" (case insensitive), it\'ll assume it\'s a boolean. If it has parentheses, it\'s assumed to be a tuple. Otherwise, it\'s a string. You can explicitly make something a string by using quotes, double or single. If using strings, the definition of strings works the same as Python strings. Triple quotes, single quote in double quoted strings, double quote in single quoted strings, backslashes to split a string along different lines, and escape characters (\\\\, \\n, \\t, \\\', and \\") work. Though you can just type \\ instead of \\\\ as long as the next character isn\'t one belonging to the escape characters, because you might get accidental escape characters you didn\'t mean for.\n\n\n[/TAB][H1]Text code area:[H1/]\n[H2]Basics[H2/]\nIt has the title "Formatted text codes" and this is where all the text codes are defined.\n\nThese should be written like writing variables in Python. It should be in this form:\nCODE_NAME = "[TEXT_HERE]"\n\nWhere "CODE_NAME" is the name you want for that code (rules on naming later), and "[TEXT_HERE]" to be the text you want to the text codes\n\nThe reason why text codes are useful are that you can make a code that\'s later editable, like a TAB code, that you can later adjust how much spacing it adds, or it can be used to shorten extremely repetitive text. Like, if you wanted to write "(x[TRUE_SUBSCRIPT]i[TRUE_SUBSCRIPT/], y[TRUE_SUBSCRIPT]i[TRUE_SUBSCRIPT/])", you\'d have to constantly write:\n(x[SUBSCRIPT]i[SUBSCRIPT/], y[SUBSCRIPT]i[SUBSCRIPT/])\nWhich is extremely hard to read and repetitive, so you can write a text code like:\nCOORD_I = (x[SUBSCRIPT]i[SUBSCRIPT/], y[SUBSCRIPT]i[SUBSCRIPT/])\n\nSo instead of writing the mess of text from earlier, you could just write "[/COORD_I]" to get "[/TRUE_COORD_I]"\nThis makes writing formatted text much easier to read and navigate.\n\nThere are 4 buttons at the top of the window which say "Clear codes", "Update preview", "Convert codes and copy", and "Copy code text"\n1. Pressing "Clear codes" clears all the codes in the window, essentially allowing you to restart clean when writing codes.\n2. Pressing "Update preview" forces an update on the update window. This is because the tags window doesn\'t constantly update the preview with changes since you might not be finished with writing a tag.\n3. Pressing "Convert codes and copy" takes the tags you wrote, turns it into a dict and copies it to your clipboard. This lets you paste it into a Python file as is.\n4. Pressing "Copy code text" takes all the text in the code writing window and copies it to your clipboard. This lets you paste it as a string for testing or to place in any piece of code.\n\n[H2]Text code rules[H2/]\nIt\'s not necessary, but it\'s recommended to make all the codes in all caps to make them distinct from normal text.\nMake sure there aren\'t any spaces in the text code name, this can lead to ambiguity in the text code name.\nAgain, these text codes should be written like normal variables in Python.\n\nOnce you write the text code name, you can have any number of spaces, an equals sign, any number of spaces, and then an opening single or double quote followed by your text and the accompanying closing quote.\nAgain, like Python, if you want double quotes in the text code, you can use single quotes for the opening and closing quotes, and for single quotes in the text code, use double quotes.\nBut also like in Python, you can use \\" or \\\' to make sure that the quote is rendered properly and avoids bugs.\n\nFinally, if the text code is getting too long, you can make a break the string into 2 lines with a backslash.\nThis doesn\'t add a newline character, and the code interpretes the string as unbroken. Again, spaces between the closing quote and backslash don\'t matter, like in regular Python.\nExample:\nLONG_THING = "This sentence is pretty long" \\\n", so let\'s break it into 2 lines"\n\nThe code would interpret this as "This sentence is pretty long, so let\'s break it into 2 lines" with no newline characters added.\n\nAlso like regular Python strings, you can also have escape codes, like your usual \\t, \\n, \\\\, \\\', and \\". You can also just type \\ instead of \\\\ as long as the next character isn\'t part of the escape characters, because you might get accidental escape characters you didn\'t mean for.\n\n\n[/TAB][H1]Text preview area:[H1/]\nIt has the title "Formatted text preview" and this is where the preview of the formatting appears.\n\nWhatever you type in the "Formatted text writer" area is shown here with the formatting tags and text codes changing the text accordingly.\n\nThere is more info in the section about the text writer window in the "Main text writing area" chapter, but when there\'s an error with the formatting tags, the background in this window turns red. And when there\'s a warning, it turns yellow.\n\nThere are 2 checkboxes and 2 button at the top of the window that says "Do formatting", "Do text codes", and "Save text" and "Save text as"\n1. The "Do formatting" checkbox controls whether the formatting tags are used or not. If they are used, you don\'t see them in the preview and the text gets formatted. If they aren\'t used, then the tags are just placed into the preview without the formatting on the enclosed text.\n2. The "Do text codes" checkbox works similarly to the "Do formatting" one, but instead of formatting text, it\'ll be replaced by its corresponding string. So if it\'s on, then it\'ll replace the text codes, otherwise, you\'ll just see the text codes in the preview.\n3. Pressing the "Save text" button saves the guide you made in a .txt file. If the text doesn\'t have a specified file linked to it, it\'ll prompt you to give it a file name. Once it has a linked file, pressing the save button uses the same file name.\n4. Pressing the "Save text as" button works like the "Save text" button, but instead of it using the same file name once it\'s linked, it\'ll always prompt you for the file name. This can allow you to copy a text save or replace other files. But doing this will change the linked file that the current edited text is one\n\n\n[/TAB][H1]General info[H1/]\nWhen opening the program for the first time, there will be example text in each text input window to show what the format and structure looks like.\n\n\n[/TAB][H1]Shortcuts:[H1/]\n[H2]Intro[H2/]\nEach sub-heading in this chapter will be the domain where the following shortcuts work. So a sub-heading that says "Formatted text writer", then the following shortcuts only work on the "Formatted text writer" window.\n\n[H2]All windows (except the help guide)[H2/]\nClosing the program:\nEscape[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Close the program\nCtrl + W[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Close the program\nCtrl + Shift + W[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Close the program\n\nProject/file management:\nCtrl + O[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Open a .txt file\nCtrl + S[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Save to .txt filee\nCtrl + Shift + S[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Save as .txt file\nCtrl + N[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Create new formatted text project\n\nWindow management:\nCtrl + Page Down[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Cycle between the windows (Order: Main, Tags, Codes, Preview, repeat)\nCtrl + Page Up[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Cycle between the windows (Order: Preview, Codes, Tags, Main, repeat)\nCtrl + Q[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Bring all the windows to the top and visible\n\nMisc:\nCtrl + P[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Update preview\n\n[H2]All text inputs[H2/]\nMost of the shortcuts here work like in most text editors and especially like VS code\n\nText history:\nCtrl + Z[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Undo\nCtrl + Shift + Z[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Redo\nCtrl + Y[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Redo\n\nText deletion:\nCtrl + Backspace[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB] Delete a word to the left\nCtrl + Delete[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Delete a word to the right\n\nText navigation:\nLeft arrow[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Move the cursor one character to the left\nRight arrow[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Move the cursor one character to the right\nUp arrow[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Move the cursor one line up\nDown arrow[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Move the cursor one line down\nCtrl + Left arrow[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Move the cursor one word to the left\nCtrl + Right arrow[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Move the cursor one word to the right\nCtrl + Up arrow[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Scroll the text up by 1 line\nCtrl + Down arrow[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Scroll the text down by 1 line\n\nText selection:\nShift + Left arrow[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Move the cursor one character to the left and change the selection\nShift + Right arrow[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Move the cursor one character to the right and change the selection\nCtrl + Shift + Left arrow[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Move the cursor one word to the left and change the selection\nCtrl + Shift + Right arrow[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Move the cursor one word to the right and change the selection\nShift + Up arrow[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Move the cursor one line up and change the selection\nShift + Down arrow[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Move the cursor one line down and change the selection\nDouble left click[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Selects the entire word that was double clicked on\nShift + Left click[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Selects everything from where the cursor started to where the mouse clicked\nShift + Home[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Move the cursor to the beginning of the line and change the selection\nShift + End[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Move the cursor to the end of the line and change the selection\n\nText moving:\nAlt + Up arrow[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Move the selected line(s) up by one line, shifting everything else down\nAlt + Down arrow[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Move the selected line(s) down  by one line, shifting everything else up\n\n[H2]Formatted text writer[H2/]\nButton shortcuts:\nCtrl + 1[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Button 1 (Loading text)\nCtrl + 2[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Button 2 (New text)\nCtrl + 3[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Button 3 (Help)\nCtrl + 4[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Button 4 (Clear text)\nCtrl + 5[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Button 5 (Copy text)\n\n[H2]Help guide[H2/]\nThis is a window that only opens with the "Help" button in the "Formatted text writer" window\n\nClosing the program:\nEscape[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Close the help guide\nCtrl + W[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Close the help guide\nCtrl + Shift + W[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Close the program\n\n[H2]Formatted text formatting[H2/]\nButton shortcuts:\nCtrl + 1[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Button 1 (Clear tags)\nCtrl + 2[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Button 2 (Update preview)\nCtrl + 3[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Button 3 (Convert tags and copy)\nCtrl + 4[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Button 4 (Copy tag text)\nCtrl + 5[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Button 5 (Load preset tags)\n\n[H2]Formatted text codes[H2/]\nButton shortcuts:\nCtrl + 1[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Button 1 (Clear codes)\nCtrl + 2[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Button 2 (Update preview)\nCtrl + 3[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Button 3 (Convert codes and copy)\nCtrl + 4[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Button 4 (Copy code text)\n\n[H2]Formatted text preview[H2/]\nButton/checkbox shortcuts:\nCtrl + 1[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Checkbox 1 (Do formatting)\nCtrl + 2[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Checkbox 2 (Do text codes)\nCtrl + 3[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Button 1 (Save text)\nCtrl + 4[/TRUE_TAB][/TRUE_TAB][/TRUE_TAB]- Button 2 (Save text as)"""
 TAGS_FOR_HELP_GUIDE = {'TRUE_SUBSCRIPT': {'font': ('Arial', 8), 'offset': -3}, 'BOLD': {'font': ('Arial', 11, 'bold')}, 'H1': {'font': ('Arial', 15, 'bold')}, 'H2': {'font': ('Arial', 13, 'bold')}, 'HYPERLINK': {'foreground': 'blue', 'underline': 'True'}}
 CODES_FOR_HELP_GUIDE = {'TAB': '     ', 'TRUE_TAB': '\t', 'TRUE_COORD_I': '(x[TRUE_SUBSCRIPT]i[TRUE_SUBSCRIPT/], y[TRUE_SUBSCRIPT]i[TRUE_SUBSCRIPT/])'}
@@ -1956,10 +1953,13 @@ class FormattedTextWriter:
         block_to_move = widget.get(f"{start_line}.0", swap_end)
 
         # 4. Perform the swap safely within the Undo stack
+        widget_auto_sep = widget.cget("autoseparators")
+        widget.config(autoseparators=False)
         widget.edit_separator()
         widget.delete(swap_start, swap_end)
         widget.insert(swap_start, block_to_move + line_above)
         widget.edit_separator()
+        widget.config(autoseparators=widget_auto_sep)
 
         # 5. Restore cursor and selection (shifted up by 1 line)
         widget.mark_set("insert", f"{insert_line - 1}.{insert_col}")
@@ -2012,10 +2012,13 @@ class FormattedTextWriter:
         block_to_move = widget.get(swap_start, f"{end_line + 1}.0")
         line_below = widget.get(f"{end_line + 1}.0", swap_end)
 
+        widget_auto_sep = widget.cget("autoseparators")
+        widget.config(autoseparators=False)
         widget.edit_separator()
         widget.delete(swap_start, swap_end)
         widget.insert(swap_start, line_below + block_to_move)
         widget.edit_separator()
+        widget.config(autoseparators=widget_auto_sep)
 
         # Restore cursor and selection (shifted down by 1 line)
         widget.mark_set("insert", f"{insert_line + 1}.{insert_col}")
@@ -2082,22 +2085,44 @@ class FormattedTextWriter:
     def text_box_left_click(self, event: tk.Event) -> str:
         widget = event.widget
         click_index = widget.index(f"@{event.x},{event.y}")
+        
+        widget._did_drag = False
 
+        # 1. Check if clicking inside an existing highlight block
+        if widget.tag_ranges("sel"):
+            sel_first = widget.index("sel.first")
+            sel_last = widget.index("sel.last")
+            if widget.compare(click_index, ">=", sel_first) and widget.compare(click_index, "<", sel_last):
+                # Activate drag-to-move mode and STOP default behavior so we don't lose the highlight
+                widget._drag_moving_text = True
+                return "break"
+
+        # 2. Normal click behavior (starts a new highlight)
+        widget._drag_moving_text = False
         widget.tag_remove("sel", "1.0", "end")
         widget.mark_set("insert", click_index)
         widget.mark_set("anchor", click_index)
-
         widget.focus_set()
+        
         return "break"
 
     # AI generated
     def text_box_left_click_drag(self, event: tk.Event) -> str:
         widget = event.widget
+        drag_index = widget.index(f"@{event.x},{event.y}")
+        widget._did_drag = True
 
+        # 1. If moving a block of text, just move the cursor as a preview
+        if getattr(widget, "_drag_moving_text", False):
+            widget.mark_set("insert", drag_index)
+            widget.see("insert")
+            self.keep_cursor_solid(event)
+            return "break"
+
+        # 2. Normal dragging behavior (stretching the highlight)
         if "anchor" not in widget.mark_names():
             widget.mark_set("anchor", "insert")
 
-        drag_index = widget.index(f"@{event.x},{event.y}")
         widget.mark_set("insert", drag_index)
 
         widget.tag_remove("sel", "1.0", "end")
@@ -2107,6 +2132,79 @@ class FormattedTextWriter:
             widget.tag_add("sel", "anchor", "insert")
 
         widget.see("insert")
+        return "break"
+
+    # AI generated
+    def text_box_left_click_release(self, event: tk.Event) -> str:
+        widget = event.widget
+
+        # If we weren't in text-moving mode, do nothing on release
+        if not getattr(widget, "_drag_moving_text", False):
+            widget._did_drag = False
+            return "break"
+
+        widget._drag_moving_text = False
+        release_index = widget.index(f"@{event.x},{event.y}")
+        
+        # 1. Did they actually drag, or just click and let go in the same spot?
+        if not widget._did_drag:
+            # Cancel the move, clear highlight, and just place the cursor there
+            widget.tag_remove("sel", "1.0", "end")
+            widget.mark_set("insert", release_index)
+            widget.mark_set("anchor", release_index)
+            return "break"
+
+        widget._did_drag = False
+
+        if not widget.tag_ranges("sel"):
+            return "break"
+
+        sel_first = widget.index("sel.first")
+        sel_last = widget.index("sel.last")
+        drop_index = widget.index("insert")
+
+        # 2. Prevent dropping the text inside of itself (which causes glitchy duplication)
+        if widget.compare(drop_index, ">=", sel_first) and widget.compare(drop_index, "<=", sel_last):
+            # widget.tag_remove("sel", "1.0", "end")
+            if widget.compare("sel.first", "==", "anchor"):
+                widget.mark_set("insert", "sel.last")
+            elif widget.compare("sel.last", "==", "anchor"):
+                widget.mark_set("insert", "sel.first")
+            return "break"
+
+        # 3. Perform the Cut & Paste
+        text_to_move = widget.get(sel_first, sel_last)
+
+        widget_auto_sep = widget.cget("autoseparators")
+        widget.config(autoseparators=False)
+        widget.edit_separator() # Group for Ctrl+Z
+
+        # We set a custom Tkinter mark at the drop location.
+        # Why? Because deleting the original text first might shift the line numbers!
+        # A mark acts like a pushpin—Tkinter automatically recalculates its position when text is deleted above it.
+        widget.mark_set("drop_mark", drop_index)
+        widget.mark_gravity("drop_mark", "left")
+
+        # Cut
+        widget.delete(sel_first, sel_last)
+
+        # Paste
+        actual_drop = widget.index("drop_mark")
+        widget.insert(actual_drop, text_to_move)
+
+        # 4. Re-highlight the text in its new location
+        new_first = actual_drop
+        new_last = f"{new_first} + {len(text_to_move)} chars"
+
+        widget.tag_remove("sel", "1.0", "end")
+        widget.tag_add("sel", new_first, new_last)
+        widget.mark_set("anchor", new_first)
+        widget.mark_set("insert", new_last)
+
+        widget.edit_separator()
+        widget.config(autoseparators=widget_auto_sep)
+
+        self.updated_text_area(text_area=widget)
         return "break"
 
     # AI generated
@@ -2219,6 +2317,7 @@ class FormattedTextWriter:
         text_area.bind("<Button-1>", self.text_box_left_click)
         text_area.bind("<B1-Motion>", self.text_box_left_click_drag)
         text_area.bind("<Double-Button-1>", self.text_box_double_click)
+        text_area.bind("<ButtonRelease-1>", self.text_box_left_click_release)
         text_area.bind("<Shift-Button-1>", self.text_box_shift_left_click)
 
         text_area._default_insertofftime = text_area.cget("insertofftime")

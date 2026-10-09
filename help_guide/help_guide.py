@@ -13,6 +13,21 @@ HELP_SECTIONS = [
 ]
 
 HELP_GUIDE_SELECTION: dict[str, dict[Literal["text", "tags", "codes"], str | dict[str, Any]]] = {
+    "default": {
+        "text": """""",
+        "tags": {
+            "SUBSCRIPT": {"font": ("Arial", 8), "offset": -3},
+            "H1": {"font": ("Arial", 15, "bold")},
+            "H2": {"font": ("Arial", 13, "bold")},
+            "HYPERLINK": {"foreground": "blue", "underline": "True"},
+            "UNDERLINE": {"underline": "True"},
+            "STRIKETHROUGH": {"overstrike": "True"},
+            "BOLD": {"font": ("Arial", 11, "bold")},
+            "ITALIC": {"font": ("Arial", 11, "italic")},
+            "RED": {"foreground": "red"},
+        },
+        "codes": {},
+    },
     "Quick start": {
         "text": """""",
         "tags": {},

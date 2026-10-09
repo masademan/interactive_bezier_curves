@@ -1,0 +1,16 @@
+TEXT_CONTENT_OF_bezier_curve_5_control_point_position_window.txt:
+"""
+
+"""
+
+
+TAG_CONTENT_OF_bezier_curve_5_control_point_position_window.txt:
+"""
+
+"""
+
+
+CODE_CONTENT_OF_bezier_curve_5_control_point_position_window.txt:
+"""
+
+"""
