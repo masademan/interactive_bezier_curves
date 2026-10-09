@@ -144,6 +144,9 @@ class BezierGUI:
         self.root.bind("<Control-W>", self.full_quit)
         self.root.bind("<Escape>", self.quit)
 
+        self.root.bind("<Control-r>", self.reset)
+        self.root.bind("<Control-R>", self.reset)
+
         self.root.bind("<Up>", lambda _event: self.move_point_in_dir("<Up>"))
         self.root.bind("<Down>", lambda _event: self.move_point_in_dir("<Down>"))
         self.root.bind("<Left>", lambda _event: self.move_point_in_dir("<Left>"))
@@ -1098,7 +1101,7 @@ class BezierGUI:
     def resize(self, _event=None) -> None:
         self.draw()
 
-    def reset(self) -> None:
+    def reset(self, _event=None) -> None:
         # Grid settings
         #   Reset show grid, show axes, and show coords
         self.show_grid_var.set(True)
