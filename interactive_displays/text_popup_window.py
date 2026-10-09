@@ -156,7 +156,7 @@ def add_frame_to_text_popup_window(
 
 
 def set_max_window_size_with_text(window: tk.Tk | tk.Toplevel, text_area: tk.Text, pixel_buffer: float = 20) -> None:
-    window.update()
+    # window.update()
 
     try:
         total_text_pixels = text_area.tk.call(

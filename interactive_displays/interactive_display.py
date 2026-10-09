@@ -1022,6 +1022,24 @@ class BezierGUI:
         self.show_and_focus_on_window(self.help_window)
         self.show_and_focus_on_window(self.control_point_pos_window)
 
+    def set_adjusted_max_help_window_height(self, event: tk.Event) -> None:
+        if event.widget != self.help_window:
+            return
+
+        current_width = self.help_window.winfo_width()
+        current_height = self.help_window.winfo_height()
+
+        if current_width == getattr(self, "last_help_window_width", None):
+            return
+
+        self.last_help_window_width = current_width
+
+        set_max_window_size_with_text(self.help_window, self.help_text_area)
+
+        new_max_height = self.help_window.maxsize()[1]
+        if current_height > new_max_height:
+            self.help_window.geometry(f"{current_width}x{new_max_height}")
+
     def open_help_guide(self) -> None:
         if self.help_window != None:
             if self.current_help_guide == self.help_selection.get():
@@ -1047,6 +1065,7 @@ class BezierGUI:
         )
         self.help_window.bind("<Control-w>", self.quit_help_window)
         self.help_window.bind("<Escape>", self.quit_help_window)
+        self.help_window.bind("<Configure>", self.set_adjusted_max_help_window_height)
 
         self.help_text_area = setup_text_popup_window(self.help_window)
 
@@ -1066,6 +1085,8 @@ class BezierGUI:
         add_buttons_to_text_popup_window(*buttons_to_add, text_area=self.help_text_area, button_to_text_spacing="\n")
 
         set_max_window_size_with_text(self.help_window, self.help_text_area)
+
+        self.last_help_window_width = self.help_window.winfo_width()
 
         self.show_and_focus_on_window(self.control_point_pos_window)
         self.show_and_focus_on_window(self.help_window)
@@ -1188,6 +1209,7 @@ class BezierGUI:
         self.help_window = None
         self.help_text_area = None
         self.current_help_guide = None
+        self.last_help_window_width = None
 
     def quit_control_point_pos_window(self, _event=None) -> None:
         self.control_point_pos_window.destroy()
